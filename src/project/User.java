@@ -1,6 +1,6 @@
 package project;
 
-public class User {
+public abstract class User {
     private int uid;
     private int sin;
     private String email;
