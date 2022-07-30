@@ -6,6 +6,16 @@ import java.util.Locale;
 
 public class Renter extends User {
     private String creditCard;
+    public Renter(int uid, String sin, String email, String occupation, String password,
+                String dob, String name, int aid, String creditCard) {
+        super(uid, sin, email, occupation, password, dob, name, aid);
+        this.creditCard = creditCard;
+    }
+
+    public Renter(User user, String creditCard) {
+        super(user);
+        this.creditCard = creditCard;
+    }
 
     public static boolean signup(DAO dao, String name, String email, String password, String sin, String dob, String occupation,
                   String address, String city, String country, String postalCode, String creditCard)
@@ -16,7 +26,7 @@ public class Renter extends User {
         } else {
             int aid = dao.createAddress(address.toLowerCase(Locale.ROOT).trim(), city.toLowerCase(Locale.ROOT).trim(),
                     country.toLowerCase(Locale.ROOT).trim(), postalCode.toLowerCase(Locale.ROOT).trim());
-            if (dao.getUserOnEmail(email.toLowerCase(Locale.ROOT).trim()) != -1) {
+            if (dao.getUserOnEmail(email.toLowerCase(Locale.ROOT).trim()) != null) {
                 return false;
             }
             int uid = dao.createUser(sin.toLowerCase(Locale.ROOT).trim(), name.trim(), dob.trim(),
@@ -24,5 +34,16 @@ public class Renter extends User {
             dao.createRenter(uid, creditCard.toLowerCase(Locale.ROOT).trim());
         }
         return true;
+    }
+
+    public static User login(DAO dao, String email, String password) throws SQLException {
+        User user = dao.getUserOnEmail(email);
+        if (user != null) {
+            Renter renter = dao.getRenterFromUser(user);
+            if (renter != null) {
+                return renter;
+            }
+        }
+        return null;
     }
 }

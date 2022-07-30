@@ -11,15 +11,43 @@ public class DAO {
         conn = DriverManager.getConnection(url, user, password);
     }
 
-    public int getUserOnEmail(String email) throws SQLException {
+    public User getUserOnEmail(String email) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE Email=?");
         stmt.setString(1, email);
         ResultSet rs = stmt.executeQuery();
-        int result = -1;
+        User user = null;
         if(rs.next()) {
-            result = rs.getInt("UID");
+            int uid = rs.getInt("UID");
+            String sin = rs.getString("SIN");
+            String occupation = rs.getString("Occupation");
+            String password = rs.getString("Password");
+            String dob = rs.getString("DOB");
+            String name = rs.getString("Name");
+            int aid = rs.getInt("AID");
+            user = new User(uid, sin, email, occupation, password, dob, name, aid);
         }
-        return result;
+        return user;
+    }
+    public Renter getRenterFromUser(User user) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Renters where UID=?");
+        stmt.setInt(1, user.getUid());
+        ResultSet rs = stmt.executeQuery();
+        Renter renter = null;
+        if(rs.next()) {
+            String creditCard = rs.getString("CreditCard");
+            renter = new Renter(user, creditCard);
+        }
+        return renter;
+    }
+    public Host getHostFromUser(User user) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Hosts where UID=?");
+        stmt.setInt(1, user.getUid());
+        ResultSet rs = stmt.executeQuery();
+        Host host = null;
+        if(rs.next()) {
+            host = new Host(user);
+        }
+        return host;
     }
     // Operations to Support
     public int getAddressID(String address, String city, String country, String postalCode) throws SQLException {
@@ -64,7 +92,7 @@ public class DAO {
         stmt.setInt(7, aid);
         stmt.setString(8, "ACTIVE");
         stmt.executeUpdate();
-        return getUserOnEmail(email);
+        return getUserOnEmail(email).getUid();
     }
 
     public void createRenter(int uid, String creditCard) throws SQLException {

@@ -1,6 +1,5 @@
 package project;
 
-import javax.management.openmbean.KeyAlreadyExistsException;
 import java.sql.SQLException;
 import java.util.Scanner;
 
@@ -8,7 +7,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "";
+    public static final String password = "HAVISHU19";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -42,8 +41,9 @@ public class Driver {
         System.out.print("Enter 1 for Renter or 2 for Host: ");
         int choice = scanner.nextInt();
 
+        scanner.nextLine();
         System.out.print("Name: ");
-        String name = scanner.next();
+        String name = scanner.nextLine();
 
         System.out.print("Email: ");
         String email = scanner.next();
@@ -57,18 +57,19 @@ public class Driver {
         System.out.print("DOB (YYYY-MM-DD): ");
         String dob = scanner.next();
 
+        scanner.nextLine();
         System.out.print("Occupation: ");
-        String occupation = scanner.next();
+        String occupation = scanner.nextLine();
 
         scanner.nextLine();
         System.out.print("Address: ");
         String address = scanner.nextLine();
 
         System.out.print("City: ");
-        String city = scanner.next();
+        String city = scanner.nextLine();
 
         System.out.print("Country: ");
-        String country = scanner.next();
+        String country = scanner.nextLine();
 
         System.out.print("Postal Code: ");
         String postalCode = scanner.next();
@@ -101,6 +102,35 @@ public class Driver {
         }
         return false;
     }
+
+    public static boolean login() {
+        System.out.print("Enter 1 for Renter or 2 for Host: ");
+        int choice = scanner.nextInt();
+
+        System.out.print("Email: ");
+        String email = scanner.next();
+
+        System.out.print("Password: ");
+        String password = scanner.next();
+
+        try {
+            if (choice == 1) {
+                loggedInUser = Renter.login(dao, email, password);
+                return true;
+            } else if (choice == 2) {
+                loggedInUser = Host.login(dao, email, password);
+                return true;
+            } else {
+                System.out.println("Invalid option");
+                return false;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem with login");
+        }
+        return false;
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -112,8 +142,7 @@ public class Driver {
                 }
                 break;
             case 2:
-//                login();
-                boolean loginSuccessful = false;
+                boolean loginSuccessful = login();
                 if (loginSuccessful) {
                     System.out.println("Log In Successful!");
                     isLoggedIn = true;
@@ -162,6 +191,7 @@ public class Driver {
             case 5:
                 System.out.println("Thank you for using MyBnB!");
                 isLoggedIn = false;
+                loggedInUser = null;
                 break;
             default:
                 System.out.println("Invalid Choice");
@@ -218,15 +248,15 @@ public class Driver {
                 System.out.println("Choose one of the following options:");
 
                 if (isLoggedIn) {
-                    displayRenterMenu();
-
-                    displayHostMenu();
-
-                    System.out.print("Enter Input: ");
-                    isLoggedIn = handleHostInput(scanner.nextInt());
-
-                    isLoggedIn = handleRenterInput(scanner.nextInt());
-
+                    if (loggedInUser.getClass() == Renter.class) {
+                        displayRenterMenu();
+                        System.out.print("Enter Input: ");
+                        isLoggedIn = handleRenterInput(scanner.nextInt());
+                    } else {
+                        displayHostMenu();
+                        System.out.print("Enter Input: ");
+                        isLoggedIn = handleHostInput(scanner.nextInt());
+                    }
                 } else {
                     displayDefaultMenu();
 
