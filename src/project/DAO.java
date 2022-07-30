@@ -11,25 +11,73 @@ public class DAO {
         conn = DriverManager.getConnection(url, user, password);
     }
 
+    public int getUserOnEmail(String email) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE Email=?");
+        stmt.setString(1, email);
+        ResultSet rs = stmt.executeQuery();
+        int result = -1;
+        if(rs.next()) {
+            result = rs.getInt("UID");
+        }
+        return result;
+    }
     // Operations to Support
-    public boolean createUser() throws SQLException {
-        /* Execute a query and iterate through the resulting  tuples. */
-            PreparedStatement execStat = conn.prepareStatement(
-                    "SELECT * FROM student");
-            ResultSet rs = execStat.executeQuery();
-        /* Extract data from result set*/
-//            while (rs.next()) {
-//                int sid = rs.getInt("sid");
-//                String sname = rs.getString("firstName");
-//                String rating = rs.getString("campus");
-//                String age = rs.getString("email");
-//                System.out.println(sname + ", " + rating + ", " + age);
-//                /* Continued ... */
-//            }
+    public int getAddressID(String address, String city, String country, String postalCode) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Addresses WHERE Address=? AND City=? AND Country=? AND PostalCode=?");
+        stmt.setString(1, address);
+        stmt.setString(2, city);
+        stmt.setString(3, country);
+        stmt.setString(4, postalCode);
+        ResultSet rs = stmt.executeQuery();
+        int result = -1;
+        if(rs.next()) {
+            result = rs.getInt("AID");
+        }
+        return result;
+    }
+    public int createAddress(String address, String city, String country, String postalCode) throws SQLException {
+        int aid = getAddressID(address, city, country, postalCode);
+        if ( aid != -1) {
+            return aid;
+        }
+        PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO Addresses(Address, City, Country, PostalCode) VALUES (?, ?, ?, ?)");
+        stmt.setString(1, address);
+        stmt.setString(2, city);
+        stmt.setString(3, country);
+        stmt.setString(4, postalCode);
+        stmt.executeUpdate();
+        return getAddressID(address, city, country, postalCode);
+    }
+    public int createUser(String sin, String name, String dob, String occupation, String email,
+                              String password, int aid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO Users(SIN, Name, DOB, Occupation, Email, Password, AID, Status) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        stmt.setString(1, sin);
+        stmt.setString(2, name);
+        stmt.setString(3, dob);
+        stmt.setString(4, occupation);
+        stmt.setString(5, email);
+        stmt.setString(6, password);
+        stmt.setInt(7, aid);
+        stmt.setString(8, "ACTIVE");
+        stmt.executeUpdate();
+        return getUserOnEmail(email);
+    }
 
-//            rs.close();
-//            execStat.close();
-        return false;
+    public void createRenter(int uid, String creditCard) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Renters VALUES (?, ?)");
+        stmt.setInt(1, uid);
+        stmt.setString(2, creditCard);
+        stmt.executeUpdate();
+    }
+
+    public void createHost(int uid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Hosts VALUES (?)");
+        stmt.setInt(1, uid);
+        stmt.executeUpdate();
     }
 
     public boolean deleteUser() {

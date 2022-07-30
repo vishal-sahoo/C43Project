@@ -1,12 +1,18 @@
 package project;
 
+import javax.management.openmbean.KeyAlreadyExistsException;
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Driver {
 
-    public static final String dbName = "practice";
+    public static final String dbName = "C43Project";
     public static final String user = "root";
     public static final String password = "";
+
+    private static Scanner scanner;
+    private static DAO dao;
+    private static User loggedInUser = null;
 
     public static void displayDefaultMenu() {
         System.out.println("1: Sign Up");
@@ -32,12 +38,78 @@ public class Driver {
         System.out.println("5: Log Out");
     }
 
+    public static boolean signup() {
+        System.out.print("Enter 1 for Renter or 2 for Host: ");
+        int choice = scanner.nextInt();
+
+        System.out.print("Name: ");
+        String name = scanner.next();
+
+        System.out.print("Email: ");
+        String email = scanner.next();
+
+        System.out.print("Password: ");
+        String password = scanner.next();
+
+        System.out.print("SIN: ");
+        String sin = scanner.next();
+
+        System.out.print("DOB (YYYY-MM-DD): ");
+        String dob = scanner.next();
+
+        System.out.print("Occupation: ");
+        String occupation = scanner.next();
+
+        scanner.nextLine();
+        System.out.print("Address: ");
+        String address = scanner.nextLine();
+
+        System.out.print("City: ");
+        String city = scanner.next();
+
+        System.out.print("Country: ");
+        String country = scanner.next();
+
+        System.out.print("Postal Code: ");
+        String postalCode = scanner.next();
+
+        try {
+            if (choice == 1) {
+                System.out.print("Credit Card: ");
+                String creditCard = scanner.next();
+                if (!Renter.signup(dao, name, email, password, sin, dob, occupation,
+                        address, city, country, postalCode, creditCard)) {
+                    System.out.println("Email already exists!");
+                } else {
+                    return true;
+                }
+            } else if (choice == 2){
+                if (!Host.signup(dao, name, email, password, sin, dob, occupation,
+                        address, city, country, postalCode)) {
+                    System.out.println("Email already exists!");
+                } else {
+                    return true;
+                }
+            } else {
+                System.out.println("Invalid option");
+            }
+        } catch (IllegalArgumentException iae) {
+            System.out.println("Please ensure all fields are non-empty");
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem signing you up");
+        }
+        return false;
+    }
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
             case 1:
-//                signup();
-                System.out.println("Sign Up Successful!");
+                if (signup()) {
+                    System.out.println("Sign up successful!");
+                }else {
+                    System.out.println("Please try again");
+                }
                 break;
             case 2:
 //                login();
@@ -137,9 +209,9 @@ public class Driver {
         try {
             boolean isLoggedIn = false;
 
-            DAO dao = new DAO(dbName, user, password);
+            dao = new DAO(dbName, user, password);
 
-            Scanner scanner = new Scanner(System.in);
+            scanner = new Scanner(System.in);
             System.out.println("Welcome to MyBnB!");
 
             while (true) {
