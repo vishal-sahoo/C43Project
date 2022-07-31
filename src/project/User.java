@@ -38,8 +38,8 @@ public class User {
     public static void validateParameters(String name, String email, String password, String sin, String dob,
                                           String occupation, String address, String city, String country, String postalCode)
                     throws IllegalArgumentException {
-        if (name == "" || email == "" || password == "" || sin == "" || dob == "" || occupation == ""
-            || address == "" || city == "" || country == "" || postalCode == "") {
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty() || sin.isEmpty() || dob.isEmpty() || occupation.isEmpty()
+            || address.isEmpty() || city.isEmpty() || country.isEmpty() || postalCode.isEmpty()) {
             throw new IllegalArgumentException();
         }
 //        this.name = name;
