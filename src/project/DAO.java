@@ -1,6 +1,7 @@
 package project;
 
 import java.sql.*;
+import java.util.ArrayList;
 
 public class DAO {
 
@@ -108,6 +109,38 @@ public class DAO {
         stmt.executeUpdate();
     }
 
+    public void createView(String view, String query) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("CREATE VIEW "+view+" AS ("+query+")");
+        stmt.execute();
+    }
+
+    public void deleteView(String view) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("DROP VIEW IF EXISTS "+view);
+        stmt.execute();
+    }
+
+    public ArrayList<Listing> getListingsFromFilter3() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Filter3");
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<Listing> result = new ArrayList<>();
+        while(rs.next()) {
+            int lid = rs.getInt("LID");
+            String type = rs.getString("Type");
+            double latitude = rs.getDouble("Latitude");
+            double longitude = rs.getDouble("Longitude");
+
+            int aid = rs.getInt("AID");
+            String address = rs.getString("Address");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            String postalCode = rs.getString("PostalCode");
+
+            Address newAddress = new Address(aid, address, city, country, postalCode);
+
+            result.add(new Listing(lid, type, latitude, longitude, newAddress));
+        }
+        return result;
+    }
     public boolean deleteUser() {
         return false;
         // remove listings

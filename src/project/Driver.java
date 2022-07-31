@@ -1,6 +1,8 @@
 package project;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Driver {
@@ -61,7 +63,6 @@ public class Driver {
         System.out.print("Occupation: ");
         String occupation = scanner.nextLine();
 
-        scanner.nextLine();
         System.out.print("Address: ");
         String address = scanner.nextLine();
 
@@ -131,6 +132,139 @@ public class Driver {
         return false;
     }
 
+    public static void displayListings() throws SQLException {
+        System.out.println("Choose base search option: ");
+        System.out.println("1: All listings");
+        System.out.println("2: Listings near a coordinate");
+        System.out.println("3: Listings near a postal code");
+        System.out.println("4: Listings at an address");
+
+        System.out.print("Enter Input: ");
+        int input = scanner.nextInt();
+//
+//        String attributes = "L.LID as LID, UID, Type, Latitude, Longitude, L.Status as Status, " +
+//                "Address, City, Country, PostalCode";
+        StringBuilder query = new StringBuilder();
+
+        query.append("SELECT * FROM Listings NATURAL JOIN Addresses WHERE Status='ACTIVE'");
+        switch (input) {
+            case 2:
+                System.out.print("Enter latitude (-90 to 90) longitude (-180 to 180): ");
+                double latitude = scanner.nextDouble();
+                double longitude = scanner.nextDouble();
+                System.out.print("Specify distance or enter -1 for default: ");
+                double distance = scanner.nextDouble();
+                if (distance < 0) {
+                    distance = 5;
+                }
+                // "SELECT * FROM Listings NATURAL JOIN ADDRESSES WHERE "
+                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
+                        "point(Latitude, Longitude)) <= "+distance);
+                break;
+            case 3:
+                System.out.print("Enter postal code (length >3): ");
+                String postalCode = scanner.next().toLowerCase(Locale.ROOT).substring(0, 3);
+                // "SELECT * FROM Listings NATURAL JOIN ADDRESSES " +
+                //                        "WHERE
+                query.append(" AND SUBSTRING(PostalCode, 1, 3)='" + postalCode + "'");
+                break;
+            case 4:
+                scanner.nextLine();
+                System.out.print("Enter address line 1: ");
+                String address = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
+                System.out.print("City: ");
+                String city = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
+                System.out.print("Country: ");
+                String country = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
+//                SELECT * FROM Listings NATURAL JOIN Addresses " +
+//                "WHERE
+                query.append((" AND Address='%s' AND City='%s' AND Country='%s'").formatted(address, city, country));
+                break;
+            default:
+                break;
+        }
+
+        System.out.println(query);
+
+        dao.deleteView("Base");
+        dao.deleteView("Filter1");
+        dao.deleteView("Filter2");
+        dao.deleteView("Filter3");
+
+        dao.createView("Base", query.toString());
+
+        StringBuilder query1 = new StringBuilder();
+
+        System.out.print("Would you like to filter by date range? (y/n): ");
+        String response = scanner.next();
+        if (response.toLowerCase().equals("y")) {
+            System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
+            String startDate = scanner.next();
+            String endDate = scanner.next();
+            query1.append("WITH temp as (SELECT L.LID FROM Listings L, Calendars C " +
+                    "WHERE L.LID=C.LID AND C.Status='AVAILABLE' AND " +
+                    "Day BETWEEN '%s' AND '%s' ".formatted(startDate, endDate) +
+                    "GROUP BY L.LID HAVING COUNT(*)=DATEDIFF('%s', '%s')+1) ".formatted(startDate, endDate) +
+                    "SELECT * FROM Base WHERE LID IN temp");
+            dao.createView("Filter1", query1.toString());
+        } else {
+            dao.createView("Filter1", "SELECT * FROM BASE");
+        }
+
+        StringBuilder query2 = new StringBuilder();
+
+        System.out.print("Would you like to filter by price range? (y/n): ");
+        response = scanner.next();
+        if (response.toLowerCase().equals("y")) {
+            System.out.print("Enter price range xx yy: ");
+            Double min = scanner.nextDouble();
+            Double max = scanner.nextDouble();
+            query2.append("WITH temp as (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
+                    "WHERE L.LID=C.LID GROUP BY L.LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+") " +
+                    "SELECT * FROM Filter1 WHERE LID IN temp");
+            dao.createView("Filter2", query2.toString());
+        } else {
+            dao.createView("Filter2", "SELECT * FROM Filter1");
+        }
+
+        StringBuilder query3 = new StringBuilder();
+
+        System.out.print("Would you like to filter by amenities offered? (y/n): ");
+        response = scanner.next();
+        if (response.toLowerCase().equals("y")) {
+            scanner.nextLine();
+            System.out.print("Enter amenities (comma separated): ");
+            String str = scanner.nextLine();
+            String [] amenities = str.split(",");
+            StringBuilder set = new StringBuilder();
+            set.append("(");
+            for (int i=0; i<amenities.length; i++) {
+                if (i==0) {
+                    set.append(amenities[i]);
+                } else {
+                    set.append("," + amenities[i]);
+                }
+            }
+            set.append(")");
+            query3.append("WITH temp as (SELECT LID FROM Listings NATURAL JOIN OFFERS" +
+                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.length + ")" +
+                    "SELECT * FROM Filter2 WHERE LID IN temp");
+            dao.createView("Filter3", query3.toString());
+        } else {
+            dao.createView("Filter3", "SELECT * FROM Filter2");
+        }
+
+        ArrayList<Listing> listings = dao.getListingsFromFilter3();
+
+        dao.deleteView("Base");
+        dao.deleteView("Filter1");
+        dao.deleteView("Filter2");
+        dao.deleteView("Filter3");
+
+        for (int j=0; j<listings.size(); j++) {
+            System.out.println(j + ") " + listings.get(j));
+        }
+    }
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -204,10 +338,14 @@ public class Driver {
         boolean isLoggedIn = true;
         switch (choice) {
             case 1:
-//                displayAllListings()
-//                filteringListings()
-                System.out.println("Select a listing you would like to book: ");
-//                handleBooking()
+                try{
+                    displayListings();
+                    System.out.println("Select a listing you would like to book: ");
+//                    handleBooking()
+                } catch (SQLException sql) {
+                    sql.printStackTrace();
+                    System.out.print("Something went wrong");
+                }
                 break;
             case 2:
 //                displayUpcomingBookings(renter)
