@@ -1,13 +1,14 @@
 package project;
 
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "HAVISHU19";
+    public static final String password = "";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -57,7 +58,7 @@ public class Driver {
         System.out.print("DOB (YYYY-MM-DD): ");
         String dob = scanner.next();
 
-        scanner.nextLine();
+        //scanner.nextLine();
         System.out.print("Occupation: ");
         String occupation = scanner.nextLine();
 
@@ -131,6 +132,42 @@ public class Driver {
         return false;
     }
 
+    public static void createListing() {
+        System.out.print("Type of listing (House, Apartment, Guesthouse, Hotel): ");
+        String type = scanner.next().toLowerCase(Locale.ROOT);
+
+        System.out.print("Latitude (-90 to 90): ");
+        double latitude = scanner.nextDouble();
+
+        System.out.print("Longitude (-180 to 180): ");
+        double longitude = scanner.nextDouble();
+
+        scanner.nextLine(); // flush
+
+        System.out.print("Address: ");
+        String address = scanner.nextLine();
+
+        System.out.print("City: ");
+        String city = scanner.nextLine();
+
+        System.out.print("Country: ");
+        String country = scanner.nextLine();
+
+        System.out.print("Postal Code: ");
+        String postalCode = scanner.next();
+
+        try {
+            Listing.createListing(dao, loggedInUser.getUid(), type, latitude, longitude, address, city, country, postalCode);
+            System.out.println("Listing Created Successfully!");
+        } catch (IllegalArgumentException iae) {
+            System.out.println("Invalid input. Please insure fields are non-empty or type matches types listed.");
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem adding that listing");
+        }
+
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -171,7 +208,8 @@ public class Driver {
 //                getListingInput()
 //                hostToolKit()
 //                createListing()
-                System.out.println("Listing Created Successfully!");
+                createListing();
+
                 break;
             case 2:
 //                displayListings(host)
