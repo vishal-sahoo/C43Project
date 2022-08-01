@@ -1,6 +1,8 @@
 package project;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -157,8 +159,10 @@ public class Driver {
         String postalCode = scanner.next();
 
         try {
-            Listing.createListing(dao, loggedInUser.getUid(), type, latitude, longitude, address, city, country, postalCode);
+            int lid = Listing.createListing(dao, loggedInUser.getUid(), type, latitude, longitude, address, city, country, postalCode);
             System.out.println("Listing Created Successfully!");
+
+            addAmenities(lid);
         } catch (IllegalArgumentException iae) {
             System.out.println("Invalid input. Please insure fields are non-empty or type matches types listed.");
         } catch (SQLException sql) {
@@ -166,6 +170,64 @@ public class Driver {
             System.out.println("There was a problem adding that listing");
         }
 
+    }
+
+    public static void addAmenities(int lid) {
+        System.out.println("===== Adding amenities to listing =====");
+
+        try {
+            // get lists of amenities of each category
+            ArrayList<String>[] categories = new ArrayList[4];
+            categories[0] = dao.getAmenitiesListByCategory("essentials");
+            categories[1] = dao.getAmenitiesListByCategory("features");
+            categories[2] = dao.getAmenitiesListByCategory("location");
+            categories[3] = dao.getAmenitiesListByCategory("safety");
+
+            // loop to get user input
+            while (true) {
+                System.out.println("Select category of amenity (-1 to exit):");
+                System.out.println("1. Essentials");
+                System.out.println("2. Features");
+                System.out.println("3. Location");
+                System.out.println("4. Safety");
+
+                int input = scanner.nextInt();
+                scanner.nextLine(); // flush
+
+                if (input == -1) {
+                    break;
+                }
+
+                // loop to add multiple amenities from category
+                while (true) {
+                    // print out amenities in that category
+                    System.out.println("Available amenities to add in selected category: ");
+                    System.out.println(categories[input-1]);
+
+                    System.out.print("Enter amenity to add (q to quit): ");
+                    String amenity = scanner.nextLine();
+
+                    if (amenity.equals("q")) {
+                        break;
+                    }
+
+                    // add amenity to the listing
+                    if (categories[input-1].contains(amenity.toLowerCase(Locale.ROOT).trim())) {
+                        categories[input-1].remove(amenity.toLowerCase(Locale.ROOT).trim());
+                        dao.offerAmenity(lid, amenity);
+                    } else {
+                        System.out.println("Invalid amenity.");
+                    }
+                }
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem adding the amenity.");
+        } catch (InputMismatchException ime) {
+            System.out.printf("Invalid input");
+        }
+
+        System.out.println("Finished adding amenities");
     }
 
     public static boolean handleDefaultInput(int choice) {

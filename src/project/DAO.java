@@ -1,6 +1,7 @@
 package project;
 
 import java.sql.*;
+import java.util.ArrayList;
 
 public class DAO {
 
@@ -82,6 +83,19 @@ public class DAO {
         return result;
     }
 
+    public ArrayList<String> getAmenitiesListByCategory(String category) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Amenities WHERE category=?");
+        stmt.setString(1, category);
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<String> amenities = new ArrayList<>();
+        while (rs.next()) {
+            amenities.add(rs.getString("Description"));
+        }
+
+        return amenities;
+    }
+
     public int createAddress(String address, String city, String country, String postalCode) throws SQLException {
         int aid = getAddressID(address, city, country, postalCode);
         if ( aid != -1) {
@@ -151,6 +165,13 @@ public class DAO {
         stmt.executeUpdate();
         //System.out.println("LISTING CREATED");
         return getListingID(hid, type, latitude, longitude, aid, "ACTIVE");
+    }
+
+    public void offerAmenity(int lid, String description) throws SQLException{
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Offers VALUES (?, ?)");
+        stmt.setInt(1, lid);
+        stmt.setString(2, description);
+        stmt.executeUpdate();
     }
 
     public boolean cancelBooking() {

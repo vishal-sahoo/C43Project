@@ -9,7 +9,7 @@ public class Listing {
     private double latitude;
     private double longitude;
 
-    public static void createListing(DAO dao, int hid, String type, double latitude, double longitude, String address,
+    public static int createListing(DAO dao, int hid, String type, double latitude, double longitude, String address,
                                         String city, String country, String postalCode)
             throws IllegalArgumentException, SQLException {
 
@@ -17,8 +17,8 @@ public class Listing {
 
         int aid = dao.createAddress(address.toLowerCase(Locale.ROOT).trim(), city.toLowerCase(Locale.ROOT).trim(),
                 country.toLowerCase(Locale.ROOT).trim(), postalCode.toLowerCase(Locale.ROOT).trim());
-        dao.createListing(hid, type, latitude, longitude, aid);
-        //return true;
+        int lid = dao.createListing(hid, type, latitude, longitude, aid);
+        return lid;
     }
 
     public static void validateParameters(String type, double latitude, double longitude, String address, String city,
