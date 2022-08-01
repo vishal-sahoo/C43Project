@@ -117,10 +117,10 @@ public class Driver {
         try {
             if (choice == 1) {
                 loggedInUser = Renter.login(dao, email, password);
-                return true;
+                return loggedInUser!=null;
             } else if (choice == 2) {
                 loggedInUser = Host.login(dao, email, password);
-                return true;
+                return loggedInUser!=null;
             } else {
                 System.out.println("Invalid option");
                 return false;
@@ -152,10 +152,10 @@ public class Driver {
                 System.out.print("Enter latitude (-90 to 90) longitude (-180 to 180): ");
                 double latitude = scanner.nextDouble();
                 double longitude = scanner.nextDouble();
-                System.out.print("Specify distance or enter -1 for default: ");
-                double distance = scanner.nextDouble();
+                System.out.print("Specify distance(km) or enter -1 for default: ");
+                double distance = scanner.nextDouble()*1000;
                 if (distance < 0) {
-                    distance = 5;
+                    distance = 5000;
                 }
                 // "SELECT * FROM Listings NATURAL JOIN ADDRESSES WHERE "
                 query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
@@ -184,7 +184,7 @@ public class Driver {
                 break;
         }
 
-        System.out.println(query);
+//        System.out.println(query);
 
         dao.deleteView("Base");
         dao.deleteView("Filter1");
@@ -201,11 +201,10 @@ public class Driver {
             System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
-            query1.append("WITH temp as (SELECT L.LID FROM Listings L, Calendars C " +
+            query1.append("SELECT * FROM Base WHERE LID IN (SELECT L.LID FROM Listings L, Calendars C " +
                     "WHERE L.LID=C.LID AND C.Status='AVAILABLE' AND " +
                     "Day BETWEEN '%s' AND '%s' ".formatted(startDate, endDate) +
-                    "GROUP BY L.LID HAVING COUNT(*)=DATEDIFF('%s', '%s')+1) ".formatted(startDate, endDate) +
-                    "SELECT * FROM Base WHERE LID IN temp");
+                    "GROUP BY L.LID HAVING COUNT(*)=DATEDIFF('%s', '%s')+1)".formatted(endDate, startDate));
             dao.createView("Filter1", query1.toString());
         } else {
             dao.createView("Filter1", "SELECT * FROM BASE");
@@ -219,9 +218,8 @@ public class Driver {
             System.out.print("Enter price range xx yy: ");
             Double min = scanner.nextDouble();
             Double max = scanner.nextDouble();
-            query2.append("WITH temp as (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
-                    "WHERE L.LID=C.LID GROUP BY L.LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+") " +
-                    "SELECT * FROM Filter1 WHERE LID IN temp");
+            query2.append("SELECT * FROM Filter1 WHERE LID IN (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
+                    "WHERE L.LID=C.LID GROUP BY L.LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+")");
             dao.createView("Filter2", query2.toString());
         } else {
             dao.createView("Filter2", "SELECT * FROM Filter1");
@@ -240,15 +238,14 @@ public class Driver {
             set.append("(");
             for (int i=0; i<amenities.length; i++) {
                 if (i==0) {
-                    set.append(amenities[i]);
+                    set.append("'" + amenities[i] + "'");
                 } else {
-                    set.append("," + amenities[i]);
+                    set.append("," + "'" + amenities[i] + "'");
                 }
             }
             set.append(")");
-            query3.append("WITH temp as (SELECT LID FROM Listings NATURAL JOIN OFFERS" +
-                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.length + ")" +
-                    "SELECT * FROM Filter2 WHERE LID IN temp");
+            query3.append("SELECT * FROM Filter2 WHERE LID IN (SELECT LID FROM Listings NATURAL JOIN Offers " +
+                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.length + ")");
             dao.createView("Filter3", query3.toString());
         } else {
             dao.createView("Filter3", "SELECT * FROM Filter2");
@@ -344,7 +341,7 @@ public class Driver {
 //                    handleBooking()
                 } catch (SQLException sql) {
                     sql.printStackTrace();
-                    System.out.print("Something went wrong");
+                    System.out.println("Something went wrong");
                 }
                 break;
             case 2:

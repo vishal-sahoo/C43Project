@@ -40,7 +40,7 @@ public class Renter extends User {
         User user = dao.getUserOnEmail(email);
         if (user != null) {
             Renter renter = dao.getRenterFromUser(user);
-            if (renter != null) {
+            if (renter != null && renter.getPassword().equals(password)) {
                 return renter;
             }
         }

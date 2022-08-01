@@ -34,7 +34,7 @@ public class Host extends User {
         User user = dao.getUserOnEmail(email);
         if (user != null) {
             Host host = dao.getHostFromUser(user);
-            if (host != null) {
+            if (host != null && host.getPassword().equals(password)) {
                 return host;
             }
         }
