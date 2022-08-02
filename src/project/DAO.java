@@ -1,6 +1,8 @@
 package project;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class DAO {
@@ -94,6 +96,42 @@ public class DAO {
         }
 
         return amenities;
+    }
+
+    /* Returns true if there are already availabilities in the given date range. */
+    public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    public void createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
+        LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+
+        while (!curDate.equals(endDate)) {
+            if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
+                // no availability on this day, so create one
+                createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+            }
+            curDate = curDate.plusDays(1);
+        }
+    }
+
+    public void createAvailability(int lid, String day, double price, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO Calendars VALUES (?, ?, ?, ?)");
+        stmt.setInt(1, lid);
+        stmt.setString(2, day);
+        stmt.setDouble(3, price);
+        stmt.setString(4, status);
+        stmt.executeUpdate();
     }
 
     public int createAddress(String address, String city, String country, String postalCode) throws SQLException {

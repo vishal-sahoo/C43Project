@@ -138,15 +138,15 @@ public class Driver {
     public static void viewHostListings() {
         System.out.println("===== All active listings =====");
         try {
-            ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
-
-            // print out the listings
-            for (int i = 0; i < hostListings.size(); i++) {
-                System.out.println(i + 1 + ": " + hostListings.get(i));
-            }
-
             boolean exit = false;
             while (!exit) {
+                ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
+
+                // print out the listings
+                for (int i = 0; i < hostListings.size(); i++) {
+                    System.out.println(i + 1 + ": " + hostListings.get(i));
+                }
+
                 // get input for updating listings
                 System.out.print("Would you like to update a listing? (y/n): ");
                 String input = scanner.next();
@@ -167,6 +167,7 @@ public class Driver {
             }
 
         } catch (SQLException sql) {
+            sql.printStackTrace();
             System.out.println("There was a problem getting listings.");
         }
 
@@ -175,11 +176,11 @@ public class Driver {
     /* Allows host to update listing with id lid */
     public static void updateListing(int lid) {
         System.out.println("LID IS: " + lid);
-        System.out.println("Select operation: ");
+        System.out.println("Possible operations: ");
         System.out.println("1. Add availability");
         System.out.println("2. Modify availability");
 
-        System.out.println("Enter input:");
+        System.out.print("Select operation: ");
         int input = scanner.nextInt();
 
         if (input == 1) {
@@ -196,11 +197,27 @@ public class Driver {
         System.out.print("Enter end date (YYYY-MM-DD): ");
         String endDate = scanner.next();
 
-        System.out.println("Enter price: ");
+        System.out.print("Enter price: ");
         double price = scanner.nextDouble();
 
-        
+        // check that there are no availabilities there already
+        try {
+            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
+                System.out.println("Availabilities already exist within this range. New availabilities will " +
+                        "be created around these old ones and old ones will remain unmodified.");
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing availabilities in database.");
+        }
 
+        // add the availabilities
+        try {
+            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue adding availabilities");
+        }
     }
 
     public static void createListing() {
