@@ -119,8 +119,16 @@ public class DAO {
         stmt.execute();
     }
 
-    public ArrayList<Listing> getListingsFromFilter3() throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Filter3");
+    public ArrayList<Listing> getListingsFromFilter3(String str) throws SQLException {
+        PreparedStatement stmt;
+
+        if (str.equals("ASC") || str.equals("DESC")) {
+            stmt = conn.prepareStatement("SELECT L.*, AVG(Price) as Price FROM Filter3 L, Calendars C " +
+                    "WHERE L.LID=C.LID GROUP BY L.LID ORDER BY Price " + str);
+        } else {
+            stmt = conn.prepareStatement("SELECT * FROM Filter3");
+        }
+
         ResultSet rs = stmt.executeQuery();
         ArrayList<Listing> result = new ArrayList<>();
         while(rs.next()) {

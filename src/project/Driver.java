@@ -141,7 +141,8 @@ public class Driver {
 
         System.out.print("Enter Input: ");
         int input = scanner.nextInt();
-//
+
+        boolean coordinateSearch = false;
 //        String attributes = "L.LID as LID, UID, Type, Latitude, Longitude, L.Status as Status, " +
 //                "Address, City, Country, PostalCode";
         StringBuilder query = new StringBuilder();
@@ -158,8 +159,14 @@ public class Driver {
                     distance = 5000;
                 }
                 // "SELECT * FROM Listings NATURAL JOIN ADDRESSES WHERE "
-                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
-                        "point(Latitude, Longitude)) <= "+distance);
+                query.setLength(0);
+                query.append("WITH temp AS (SELECT *, ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
+                        "point(Latitude, Longitude)) as Distance FROM Listings NATURAL JOIN Addresses " +
+                        "WHERE Status='ACTIVE') " +
+                        "SELECT * FROM temp WHERE Distance <= " +distance+ " ORDER BY Distance");
+//                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
+//                        "point(Latitude, Longitude)) <= "+distance);
+                coordinateSearch = true;
                 break;
             case 3:
                 System.out.print("Enter postal code (length >3): ");
@@ -251,7 +258,14 @@ public class Driver {
             dao.createView("Filter3", "SELECT * FROM Filter2");
         }
 
-        ArrayList<Listing> listings = dao.getListingsFromFilter3();
+        ArrayList<Listing> listings;
+        if (!coordinateSearch) {
+            listings = dao.getListingsFromFilter3("");
+        } else {
+            System.out.print("Would you like to rank by price? (asc/desc/n): ");
+            String str = scanner.next().trim().toUpperCase(Locale.ROOT);
+            listings = dao.getListingsFromFilter3(str);
+        }
 
         dao.deleteView("Base");
         dao.deleteView("Filter1");
