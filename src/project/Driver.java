@@ -134,6 +134,75 @@ public class Driver {
         return false;
     }
 
+    /* Displays all host's listings and allows host to select which they want to update */
+    public static void viewHostListings() {
+        System.out.println("===== All active listings =====");
+        try {
+            ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
+
+            // print out the listings
+            for (int i = 0; i < hostListings.size(); i++) {
+                System.out.println(i + 1 + ": " + hostListings.get(i));
+            }
+
+            boolean exit = false;
+            while (!exit) {
+                // get input for updating listings
+                System.out.print("Would you like to update a listing? (y/n): ");
+                String input = scanner.next();
+
+                if (input.equals("y")) {
+                    System.out.print("Enter listing number to update: ");
+                    int listing = scanner.nextInt();
+                    if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
+                        updateListing(hostListings.get(listing - 1).getLid());
+                    } else {
+                        System.out.println("Invalid input.");
+                    }
+                } else if (input.equals("n")) {
+                    exit = true;
+                } else {
+                    System.out.println("Invalid input.");
+                }
+            }
+
+        } catch (SQLException sql) {
+            System.out.println("There was a problem getting listings.");
+        }
+
+    }
+
+    /* Allows host to update listing with id lid */
+    public static void updateListing(int lid) {
+        System.out.println("LID IS: " + lid);
+        System.out.println("Select operation: ");
+        System.out.println("1. Add availability");
+        System.out.println("2. Modify availability");
+
+        System.out.println("Enter input:");
+        int input = scanner.nextInt();
+
+        if (input == 1) {
+            addAvailability(lid);
+        } else if (input == 2) {
+            System.out.println("modify an availability (including price), only if it hasn't been booked");
+        }
+    }
+
+    public static void addAvailability(int lid) {
+        System.out.print("Enter start date for availability (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        System.out.println("Enter price: ");
+        double price = scanner.nextDouble();
+
+        
+
+    }
+
     public static void createListing() {
         System.out.print("Type of listing (House, Apartment, Guesthouse, Hotel): ");
         String type = scanner.next().toLowerCase(Locale.ROOT);
@@ -275,7 +344,8 @@ public class Driver {
                 break;
             case 2:
 //                displayListings(host)
-                System.out.println("Select a listing you would like to update: ");
+                viewHostListings();
+                //System.out.println("Select a listing you would like to update: ");
 //                handleUpdateListing()
                 break;
             case 3:

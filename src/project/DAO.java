@@ -140,6 +140,30 @@ public class DAO {
         stmt.executeUpdate();
     }
 
+    public ArrayList<Listing> getListingsFromHost(int hid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Listings NATURAL JOIN Addresses WHERE uid=? AND status='ACTIVE'");
+        stmt.setInt(1, hid);
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<Listing> result = new ArrayList<>();
+        while(rs.next()) {
+            int lid = rs.getInt("LID");
+            String type = rs.getString("Type");
+            double latitude = rs.getDouble("Latitude");
+            double longitude = rs.getDouble("Longitude");
+
+            int aid = rs.getInt("AID");
+            String address = rs.getString("Address");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            String postalCode = rs.getString("PostalCode");
+
+            Address newAddress = new Address(aid, address, city, country, postalCode);
+            result.add(new Listing(lid, type, latitude, longitude, newAddress));
+        }
+        return result;
+    }
+
     public boolean deleteUser() {
         return false;
         // remove listings
