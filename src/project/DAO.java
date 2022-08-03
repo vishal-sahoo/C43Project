@@ -1,6 +1,8 @@
 package project;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class DAO {
@@ -65,6 +67,73 @@ public class DAO {
         }
         return result;
     }
+
+    public int getListingID(int hid, String type, double latitude, double longitude, int aid, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Listings WHERE uid=? AND type=? AND latitude=? AND longitude=? AND aid=? AND status=?");
+        stmt.setInt(1, hid);
+        stmt.setString(2, type);
+        stmt.setDouble(3, latitude);
+        stmt.setDouble(4, longitude);
+        stmt.setInt(5, aid);
+        stmt.setString(6, status);
+        ResultSet rs = stmt.executeQuery();
+        int result = -1;
+        if (rs.next()) {
+            result = rs.getInt("LID");
+        }
+        return result;
+    }
+
+    public ArrayList<String> getAmenitiesListByCategory(String category) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Amenities WHERE category=?");
+        stmt.setString(1, category);
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<String> amenities = new ArrayList<>();
+        while (rs.next()) {
+            amenities.add(rs.getString("Description"));
+        }
+
+        return amenities;
+    }
+
+    /* Returns true if there are already availabilities in the given date range. */
+    public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    public void createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
+        LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+
+        while (!curDate.equals(endDate)) {
+            if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
+                // no availability on this day, so create one
+                createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+            }
+            curDate = curDate.plusDays(1);
+        }
+    }
+
+    public void createAvailability(int lid, String day, double price, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO Calendars VALUES (?, ?, ?, ?)");
+        stmt.setInt(1, lid);
+        stmt.setString(2, day);
+        stmt.setDouble(3, price);
+        stmt.setString(4, status);
+        stmt.executeUpdate();
+    }
+
     public int createAddress(String address, String city, String country, String postalCode) throws SQLException {
         int aid = getAddressID(address, city, country, postalCode);
         if ( aid != -1) {
@@ -144,11 +213,36 @@ public class DAO {
             String postalCode = rs.getString("PostalCode");
 
             Address newAddress = new Address(aid, address, city, country, postalCode);
-
             result.add(new Listing(lid, type, latitude, longitude, newAddress));
         }
         return result;
     }
+
+    public ArrayList<Listing> getListingsFromHost(int hid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Listings NATURAL JOIN Addresses WHERE uid=? AND status='ACTIVE'");
+        stmt.setInt(1, hid);
+        
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<Listing> result = new ArrayList<>();
+        while(rs.next()) {
+            int lid = rs.getInt("LID");
+            String type = rs.getString("Type");
+            double latitude = rs.getDouble("Latitude");
+            double longitude = rs.getDouble("Longitude");
+
+            int aid = rs.getInt("AID");
+            String address = rs.getString("Address");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            String postalCode = rs.getString("PostalCode");
+
+            Address newAddress = new Address(aid, address, city, country, postalCode);
+            result.add(new Listing(lid, type, latitude, longitude, newAddress));
+        }
+        return result;
+    }
+
     public boolean deleteUser() {
         return false;
         // remove listings
@@ -161,8 +255,26 @@ public class DAO {
         // create a new booking given listing and date range if available
     }
 
-    public boolean createListing() {
-        return false;
+    public int createListing(int hid, String type, double latitude, double longitude, int aid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO Listings(UID, Type, Latitude, Longitude, AID, Status) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)");
+        stmt.setInt(1, hid);
+        stmt.setString(2, type);
+        stmt.setDouble(3, latitude);
+        stmt.setDouble(4, longitude);
+        stmt.setInt(5, aid);
+        stmt.setString(6, "ACTIVE");
+        stmt.executeUpdate();
+        //System.out.println("LISTING CREATED");
+        return getListingID(hid, type, latitude, longitude, aid, "ACTIVE");
+    }
+
+    public void offerAmenity(int lid, String description) throws SQLException{
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Offers VALUES (?, ?)");
+        stmt.setInt(1, lid);
+        stmt.setString(2, description);
+        stmt.executeUpdate();
     }
 
     public boolean cancelBooking() {
