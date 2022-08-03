@@ -60,7 +60,7 @@ public class Driver {
         System.out.print("DOB (YYYY-MM-DD): ");
         String dob = scanner.next();
 
-        //scanner.nextLine();
+        scanner.nextLine();
         System.out.print("Occupation: ");
         String occupation = scanner.nextLine();
 
@@ -291,16 +291,17 @@ public class Driver {
                     System.out.println(categories[input-1]);
 
                     System.out.print("Enter amenity to add (q to quit): ");
-                    String amenity = scanner.nextLine();
+                    String amenity = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
 
                     if (amenity.equals("q")) {
                         break;
                     }
 
                     // add amenity to the listing
-                    if (categories[input-1].contains(amenity.toLowerCase(Locale.ROOT).trim())) {
-                        categories[input-1].remove(amenity.toLowerCase(Locale.ROOT).trim());
+                    if (categories[input-1].contains(amenity)) {
+                        categories[input-1].remove(amenity);
                         dao.offerAmenity(lid, amenity);
+                        System.out.println("Amenity added.");
                     } else {
                         System.out.println("Invalid amenity.");
                     }
