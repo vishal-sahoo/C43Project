@@ -1,10 +1,7 @@
 package project;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.Locale;
-import java.util.Scanner;
+import java.util.*;
 
 public class Driver {
 
@@ -133,7 +130,7 @@ public class Driver {
         return false;
     }
 
-    public static void displayListings() throws SQLException {
+    public static List<Listing> displayListings() throws SQLException {
         System.out.println("Choose base search option: ");
         System.out.println("1: All listings");
         System.out.println("2: Listings near a coordinate");
@@ -276,7 +273,10 @@ public class Driver {
         for (int j=0; j<listings.size(); j++) {
             System.out.println(j + ") " + listings.get(j));
         }
+
+        return listings;
     }
+
     /* Displays all host's listings and allows host to select which they want to update */
     public static void viewHostListings() {
         System.out.println("===== All active listings =====");
@@ -459,6 +459,23 @@ public class Driver {
         System.out.println("Finished adding amenities");
     }
 
+    public static void handleBooking(List<Listing> listings) throws SQLException {
+        System.out.print("Select a listing you would like to book: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > listings.size()) {
+            System.out.println("Invalid Listing");
+            return;
+        }
+        System.out.print("Enter start-date end-date (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+        String endDate = scanner.next();
+        Booking booking = Booking.create(dao, loggedInUser.getUid(),
+                listings.get(input).getLid(), startDate, endDate);
+        if (booking != null) {
+            System.out.println("New booking was created for cost of " + booking.getCost());
+        }
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -535,9 +552,10 @@ public class Driver {
         switch (choice) {
             case 1:
                 try{
-                    displayListings();
-                    System.out.println("Select a listing you would like to book: ");
-//                    handleBooking()
+                    List<Listing> listings = displayListings();
+                    if (!listings.isEmpty()) {
+                        handleBooking(listings);
+                    }
                 } catch (SQLException sql) {
                     sql.printStackTrace();
                     System.out.println("Something went wrong");

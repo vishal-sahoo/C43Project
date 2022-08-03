@@ -52,7 +52,7 @@ public class DAO {
         }
         return host;
     }
-    // Operations to Support
+
     public int getAddressID(String address, String city, String country, String postalCode) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
                 "SELECT * FROM Addresses WHERE Address=? AND City=? AND Country=? AND PostalCode=?");
@@ -148,6 +148,7 @@ public class DAO {
         stmt.executeUpdate();
         return getAddressID(address, city, country, postalCode);
     }
+
     public int createUser(String sin, String name, String dob, String occupation, String email,
                               String password, int aid) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
@@ -243,18 +244,6 @@ public class DAO {
         return result;
     }
 
-    public boolean deleteUser() {
-        return false;
-        // remove listings
-        // cancel relevant bookings
-    }
-
-    public boolean createBooking() {
-        return false;
-        // update calendar
-        // create a new booking given listing and date range if available
-    }
-
     public int createListing(int hid, String type, double latitude, double longitude, int aid) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
                 "INSERT INTO Listings(UID, Type, Latitude, Longitude, AID, Status) " +
@@ -275,6 +264,83 @@ public class DAO {
         stmt.setInt(1, lid);
         stmt.setString(2, description);
         stmt.executeUpdate();
+    }
+
+    public Booking getBooking(int lid, String startDate, String endDate) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings " +
+                "WHERE LID = ? AND StartDate = ? AND endDate = ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, startDate);
+        stmt.setString(3, endDate);
+
+        ResultSet rs = stmt.executeQuery();
+        Booking booking = null;
+        if (rs.next()) {
+            int bid = rs.getInt("BID");
+            int rid = rs.getInt("RID");
+            Double cost = rs.getDouble("Cost");
+            String status = rs.getString("Status");
+            String review = rs.getString("Review");
+            int rating = rs.getInt("Rating");
+            booking = new Booking(bid, rid, lid, startDate, endDate, cost, status, review, rating);
+        }
+        return booking;
+    }
+
+    public boolean checkAvailability(int lid, String startDate, String endDate) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT LID FROM Calendars C " +
+                "WHERE Status='AVAILABLE' AND LID = ? AND Day BETWEEN ? AND ? " +
+                "GROUP BY LID HAVING COUNT(*)=DATEDIFF(?, ?)+1");
+        stmt.setInt(1, lid);
+        stmt.setString(2, startDate);
+        stmt.setString(3, endDate);
+        stmt.setString(4, endDate);
+        stmt.setString(5, startDate);
+        return stmt.executeQuery().next();
+    }
+
+    public double getCost(int lid, String startDate, String endDate) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT SUM(Price) as Cost FROM Calendars " +
+                "WHERE LID = ? AND Day BETWEEN ? AND ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, startDate);
+        stmt.setString(3, endDate);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble("Cost");
+        }
+        return -1;
+    }
+
+    public void updateCalendar(int lid, String startDate, String endDate) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status = 'BOOKED' " +
+                "WHERE LID = ? AND Day BETWEEN ? AND ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, startDate);
+        stmt.setString(3, endDate);
+        stmt.executeUpdate();
+    }
+
+    public Booking createBooking(int rid, int lid, String startDate,
+                                 String endDate, double cost) throws SQLException {
+        // update calendar
+        // create a new booking given listing and date range if available
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO " +
+                "Bookings(RID, LID, StartDate, EndDate, Cost, Status) VALUES(?, ?, ?, ?, ?, 'UPCOMING')");
+        stmt.setInt(1, rid);
+        stmt.setInt(2, lid);
+        stmt.setString(3, startDate);
+        stmt.setString(4, endDate);
+        stmt.setDouble(5, cost);
+        stmt.executeUpdate();
+
+        return getBooking(lid, startDate, endDate);
+    }
+
+    public boolean deleteUser() {
+        return false;
+        // remove listings
+        // cancel relevant bookings
     }
 
     public boolean cancelBooking() {
@@ -306,42 +372,6 @@ public class DAO {
         return false;
         // renter or host can leave a rating and/or comment about the other
     }
-
-
-    // Queries to support
-    public void getListingsWithinRadius(){
-        // given lat and long, return listings within a given radius (default if none provided)
-        // rank by distance
-        // option to rank by price (ascending or descending)
-    }
-
-    public void getListingsNearPostalCode(){
-        // return listings in given postal code or in adjacent postal codes
-    }
-
-    public void getListingsByAddress() {
-        // return listings given an address
-    }
-
-
-    // all filtering should be supported
-
-
-    // Reports to support
-    public void getNumOfBookings() {
-        // return num of bookings given a date range
-        // group by city or postal code within a city
-    }
-
-    public void getNumofListings() {
-        // return num of listings by country, by country and city, by country, city, and postal code
-    }
-
-    public void rankHosts() {
-        // rank hosts by total number of listings by country (optionally by city)
-    }
-
-    // more reports to be added
 
     public void close() throws SQLException {
         conn.close();
