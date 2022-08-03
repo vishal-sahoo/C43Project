@@ -195,38 +195,98 @@ public class DAO {
         // renter or host can leave a rating and/or comment about the other
     }
 
-
-    // Queries to support
-    public void getListingsWithinRadius(){
-        // given lat and long, return listings within a given radius (default if none provided)
-        // rank by distance
-        // option to rank by price (ascending or descending)
-    }
-
-    public void getListingsNearPostalCode(){
-        // return listings in given postal code or in adjacent postal codes
-    }
-
-    public void getListingsByAddress() {
-        // return listings given an address
-    }
-
-
-    // all filtering should be supported
-
-
     // Reports to support
-    public void getNumOfBookings() {
+    public int reportNumBookings(String startDate, String endDate, String postalCode) throws SQLException {
         // return num of bookings given a date range
         // group by city or postal code within a city
+        PreparedStatement stmt;
+        if (postalCode.equals("y")){
+            stmt = conn.prepareStatement("SELECT City, PostalCode, COUNT(*) AS NumBookings " +
+                    "FROM Bookings b, Listings l, Addresses a " +
+                    "WHERE b.LID=l.LID AND l.AID=a.AID AND StartDate >= ? AND EndDate <= ? " +
+                    "AND b.Status != 'CANCELLED' GROUP BY City, PostalCode");
+        } else {
+            stmt = conn.prepareStatement("SELECT City, COUNT(*) AS NumBookings " +
+                    "FROM Bookings b, Listings l, Addresses a " +
+                    "WHERE b.LID=l.LID AND l.AID=a.AID AND StartDate >= ? AND EndDate <= ? " +
+                    "AND b.Status != 'CANCELLED' GROUP BY City");
+        }
+        stmt.setString(1, startDate);
+        stmt.setString(2, endDate);
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String city = rs.getString("City");
+            int num = rs.getInt("NumBokings");
+            if (postalCode.equals("y")) {
+                String code = rs.getString("PostalCode");
+                System.out.println(city + ", " + code + ", " + num);
+            }else {
+                System.out.println(city + ", " + num);
+            }
+        }
+        return 0;
     }
 
-    public void getNumofListings() {
+    public void reportNumListings(String includeCity, String includeCode) throws SQLException {
         // return num of listings by country, by country and city, by country, city, and postal code
+        PreparedStatement stmt;
+        if (includeCity.equals("y")){
+            if (includeCode.equals(("y"))) {
+                stmt = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS NumListings " +
+                        "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                        "GROUP BY Country, City, PostalCode");
+            } else {
+                stmt = conn.prepareStatement("SELECT Country, City, COUNT(*) AS NumListings " +
+                        "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                        "GROUP BY Country, City");
+            }
+        } else {
+            stmt = conn.prepareStatement("SELECT Country, COUNT(*) AS NumListings " +
+                    "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                    "GROUP BY Country");
+        }
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String country = rs.getString("Country");
+            int num = rs.getInt("NumListings");
+            if (includeCity.equals("y")) {
+                String city = rs.getString("City");
+                if(includeCode.equals("y")) {
+                    String code = rs.getString("PostalCode");
+                    System.out.println(country + ", " + city + ", " + code + ", " + num);
+                } else {
+                    System.out.println(country + ", " + city + ", " + num);
+                }
+            }else {
+                System.out.println(country + ", " + num);
+            }
+        }
     }
 
-    public void rankHosts() {
+    public void rankHosts(String input) throws SQLException {
         // rank hosts by total number of listings by country (optionally by city)
+        PreparedStatement stmt;
+        if (input.equals("y")) {
+            stmt = conn.prepareStatement("SELECT Country, City, Name, Count(*) as Num FROM " +
+                    "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
+                    "GROUP BY Country, City, l.UID ORDER BY count(*) DESC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Country, Name, Count(*) as Num FROM " +
+                    "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
+                    "GROUP BY Country, l.UID ORDER BY count(*) DESC");
+        }
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String country = rs.getString("Country");
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            if (input.equals("y")) {
+                String city = rs.getString("City");
+                System.out.println(country + ", " + city + ", " + name + ", " + num);
+            } else {
+                System.out.println(country + ", " + name + ", " + num);
+            }
+        }
     }
 
     // more reports to be added

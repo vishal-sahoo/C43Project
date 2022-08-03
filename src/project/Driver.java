@@ -39,6 +39,12 @@ public class Driver {
         System.out.println("5: Log Out");
     }
 
+    public static void displayReportsMenu() {
+        System.out.println("1: Number of bookings in a date range and city (and postal code)");
+        System.out.println("2: Number of listings per country (and city (and postal code))");
+        System.out.println("3: Rank hosts based on number of listings per country (or city)");
+
+    }
     public static boolean signup() {
         System.out.print("Enter 1 for Renter or 2 for Host: ");
         int choice = scanner.nextInt();
@@ -203,8 +209,8 @@ public class Driver {
         StringBuilder query1 = new StringBuilder();
 
         System.out.print("Would you like to filter by date range? (y/n): ");
-        String response = scanner.next();
-        if (response.toLowerCase().equals("y")) {
+        String response = scanner.next().trim().toLowerCase(Locale.ROOT);
+        if (response.equals("y")) {
             System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
@@ -276,6 +282,46 @@ public class Driver {
             System.out.println(j + ") " + listings.get(j));
         }
     }
+
+    public static void handleReports() throws SQLException {
+        // 1) num of bookings in a date range and city (optional postal code)
+        // 2) num of listings per country or country and city or country and city and postal code
+        // 3) rank hosts based on num of listings per country (or by city)
+        displayReportsMenu();
+        System.out.print("Enter Input: ");
+        int choice = scanner.nextInt();
+        switch (choice) {
+            case 1:
+                System.out.print("Enter start-date end-date (YYYY-MM-DD): ");
+                String startDate = scanner.next().trim();
+                String endDate = scanner.next().trim();
+
+                System.out.print("Would you like to group by postal code too? (y/n): ");
+                String postalCode = scanner.next().trim().toLowerCase(Locale.ROOT);
+
+                int num = dao.reportNumBookings(startDate, endDate, postalCode);
+//                System.out.println("Number of bookings: " + num);
+                break;
+            case 2:
+                System.out.print("Would you like to group by city too? (y/n): ");
+                String city1 = scanner.next().trim().toLowerCase(Locale.ROOT);
+                String postalCode1 = "n";
+                if (city1.equals("y")) {
+                    System.out.print("Would you like to group by postal code too? (y/n): ");
+                    postalCode1 = scanner.next().trim().toLowerCase(Locale.ROOT);
+                }
+                dao.reportNumListings(city1, postalCode1);
+                break;
+            case 3:
+                System.out.print("Would you like to rank by city? (y/n): ");
+                String input = scanner.next().trim().toLowerCase(Locale.ROOT);
+                dao.rankHosts(input);
+                break;
+            default:
+                break;
+        }
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -300,7 +346,12 @@ public class Driver {
                 System.out.println("User Deleted Successfully");
                 break;
             case 4:
-//                handleReports()
+                try {
+                    handleReports();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    System.out.print("Something went wrong");
+                }
                 break;
             default:
                 System.out.println("Invalid Choice");
