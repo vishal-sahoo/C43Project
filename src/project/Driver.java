@@ -10,7 +10,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "";
+    public static final String password = "HAVISHU19";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -209,10 +209,12 @@ public class Driver {
             System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
-            query1.append("SELECT * FROM Base WHERE LID IN (SELECT L.LID FROM Listings L, Calendars C " +
-                    "WHERE L.LID=C.LID AND C.Status='AVAILABLE' AND " +
+//            query1.append("SELECT * FROM Base WHERE LID IN (SELECT L.LID FROM Listings L, Calendars C " +
+//                    "WHERE L.LID=C.LID AND C.Status='AVAILABLE' AND " +
+            query1.append("SELECT * FROM Base WHERE LID IN (SELECT LID FROM Calendars " +
+                    "WHERE Status='AVAILABLE' AND " +
                     "Day BETWEEN '%s' AND '%s' ".formatted(startDate, endDate) +
-                    "GROUP BY L.LID HAVING COUNT(*)=DATEDIFF('%s', '%s')+1)".formatted(endDate, startDate));
+                    "GROUP BY LID HAVING COUNT(*)=DATEDIFF('%s', '%s')+1)".formatted(endDate, startDate));
             dao.createView("Filter1", query1.toString());
         } else {
             dao.createView("Filter1", "SELECT * FROM BASE");
@@ -226,8 +228,10 @@ public class Driver {
             System.out.print("Enter price range xx yy: ");
             Double min = scanner.nextDouble();
             Double max = scanner.nextDouble();
-            query2.append("SELECT * FROM Filter1 WHERE LID IN (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
-                    "WHERE L.LID=C.LID GROUP BY L.LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+")");
+//            query2.append("SELECT * FROM Filter1 WHERE LID IN (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
+//                    "WHERE L.LID=C.LID GROUP BY L.LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+")");
+            query2.append("SELECT * FROM Filter1 WHERE LID IN (SELECT LID FROM CALENDARS C "+
+                    "GROUP BY LID HAVING AVG(Price) BETWEEN "+min+" AND "+max+")");
             dao.createView("Filter2", query2.toString());
         } else {
             dao.createView("Filter2", "SELECT * FROM Filter1");
