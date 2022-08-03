@@ -2,6 +2,7 @@ package project;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -322,6 +323,189 @@ public class Driver {
         }
     }
 
+    /* Displays all host's listings and allows host to select which they want to update */
+    public static void viewHostListings() {
+        System.out.println("===== All active listings =====");
+        try {
+            boolean exit = false;
+            while (!exit) {
+                ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
+
+                // print out the listings
+                for (int i = 0; i < hostListings.size(); i++) {
+                    System.out.println(i + 1 + ": " + hostListings.get(i));
+                }
+
+                // get input for updating listings
+                System.out.print("Would you like to update a listing? (y/n): ");
+                String input = scanner.next();
+
+                if (input.equals("y")) {
+                    System.out.print("Enter listing number to update: ");
+                    int listing = scanner.nextInt();
+                    if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
+                        updateListing(hostListings.get(listing - 1).getLid());
+                    } else {
+                        System.out.println("Invalid input.");
+                    }
+                } else if (input.equals("n")) {
+                    exit = true;
+                } else {
+                    System.out.println("Invalid input.");
+                }
+            }
+
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem getting listings.");
+        }
+
+    }
+
+    /* Allows host to update listing with id lid */
+    public static void updateListing(int lid) {
+        System.out.println("LID IS: " + lid);
+        System.out.println("Possible operations: ");
+        System.out.println("1. Add availability");
+        System.out.println("2. Modify availability");
+
+        System.out.print("Select operation: ");
+        int input = scanner.nextInt();
+
+        if (input == 1) {
+            addAvailability(lid);
+        } else if (input == 2) {
+            System.out.println("modify an availability (including price), only if it hasn't been booked");
+        }
+    }
+
+    public static void addAvailability(int lid) {
+        System.out.print("Enter start date for availability (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        System.out.print("Enter price: ");
+        double price = scanner.nextDouble();
+
+        // check that there are no availabilities there already
+        try {
+            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
+                System.out.println("Availabilities already exist within this range. New availabilities will " +
+                        "be created around these old ones and old ones will remain unmodified.");
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing availabilities in database.");
+        }
+
+        // add the availabilities
+        try {
+            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue adding availabilities");
+        }
+    }
+
+    public static void createListing() {
+        System.out.print("Type of listing (House, Apartment, Guesthouse, Hotel): ");
+        String type = scanner.next().toLowerCase(Locale.ROOT);
+
+        System.out.print("Latitude (-90 to 90): ");
+        double latitude = scanner.nextDouble();
+
+        System.out.print("Longitude (-180 to 180): ");
+        double longitude = scanner.nextDouble();
+
+        scanner.nextLine(); // flush
+
+        System.out.print("Address: ");
+        String address = scanner.nextLine();
+
+        System.out.print("City: ");
+        String city = scanner.nextLine();
+
+        System.out.print("Country: ");
+        String country = scanner.nextLine();
+
+        System.out.print("Postal Code: ");
+        String postalCode = scanner.next();
+
+        try {
+            int lid = Listing.createListing(dao, loggedInUser.getUid(), type, latitude, longitude, address, city, country, postalCode);
+            System.out.println("Listing Created Successfully!");
+
+            addAmenities(lid);
+        } catch (IllegalArgumentException iae) {
+            System.out.println("Invalid input. Please insure fields are non-empty or type matches types listed.");
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem adding that listing");
+        }
+
+    }
+
+    public static void addAmenities(int lid) {
+        System.out.println("===== Adding amenities to listing =====");
+
+        try {
+            // get lists of amenities of each category
+            ArrayList<String>[] categories = new ArrayList[4];
+            categories[0] = dao.getAmenitiesListByCategory("essentials");
+            categories[1] = dao.getAmenitiesListByCategory("features");
+            categories[2] = dao.getAmenitiesListByCategory("location");
+            categories[3] = dao.getAmenitiesListByCategory("safety");
+
+            // loop to get user input
+            while (true) {
+                System.out.println("Select category of amenity (-1 to exit):");
+                System.out.println("1. Essentials");
+                System.out.println("2. Features");
+                System.out.println("3. Location");
+                System.out.println("4. Safety");
+
+                int input = scanner.nextInt();
+                scanner.nextLine(); // flush
+
+                if (input == -1) {
+                    break;
+                }
+
+                // loop to add multiple amenities from category
+                while (true) {
+                    // print out amenities in that category
+                    System.out.println("Available amenities to add in selected category: ");
+                    System.out.println(categories[input-1]);
+
+                    System.out.print("Enter amenity to add (q to quit): ");
+                    String amenity = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
+
+                    if (amenity.equals("q")) {
+                        break;
+                    }
+
+                    // add amenity to the listing
+                    if (categories[input-1].contains(amenity)) {
+                        categories[input-1].remove(amenity);
+                        dao.offerAmenity(lid, amenity);
+                        System.out.println("Amenity added.");
+                    } else {
+                        System.out.println("Invalid amenity.");
+                    }
+                }
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("There was a problem adding the amenity.");
+        } catch (InputMismatchException ime) {
+            System.out.printf("Invalid input");
+        }
+
+        System.out.println("Finished adding amenities");
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -367,11 +551,13 @@ public class Driver {
 //                getListingInput()
 //                hostToolKit()
 //                createListing()
-                System.out.println("Listing Created Successfully!");
+                createListing();
+
                 break;
             case 2:
 //                displayListings(host)
-                System.out.println("Select a listing you would like to update: ");
+                viewHostListings();
+                //System.out.println("Select a listing you would like to update: ");
 //                handleUpdateListing()
                 break;
             case 3:
