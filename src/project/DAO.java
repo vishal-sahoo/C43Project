@@ -101,10 +101,22 @@ public class DAO {
     /* Returns true if there are already availabilities in the given date range. */
     public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
-                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ?");
+                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ? AND Status!=?");
         stmt.setInt(1, lid);
         stmt.setString(2, start);
         stmt.setString(3, end);
+        stmt.setString(4, "UNAVAILABLE");
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    /* Returns true if there is an availability with given lid, day, and status. */
+    public boolean checkAvailability(int lid, String day, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day=? AND Status=?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, day);
+        stmt.setString(3, status);
         ResultSet rs = stmt.executeQuery();
         return rs.next();
     }
@@ -136,7 +148,7 @@ public class DAO {
 
         while (!curDate.equals(endDate)) {
             if (checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
-                updateAvailability(lid, curDate.toString(), price); // availability exists, so update the price
+                updateAvailabilityPrice(lid, curDate.toString(), price); // availability exists, so update the price
                 count++;
             }
             curDate = curDate.plusDays(1);
@@ -144,9 +156,17 @@ public class DAO {
         return count;
     }
 
-    public void updateAvailability(int lid, String day, double price) throws SQLException {
+    public void updateAvailabilityPrice(int lid, String day, double price) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Price=? WHERE lid=? AND Day=?");
         stmt.setDouble(1, price);
+        stmt.setInt(2, lid);
+        stmt.setString(3, day);
+        stmt.executeUpdate();
+    }
+
+    public void updateAvailabilityStatus(int lid, String day, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status=? WHERE lid=? AND Day=?");
+        stmt.setString(1, status);
         stmt.setInt(2, lid);
         stmt.setString(3, day);
         stmt.executeUpdate();
@@ -160,8 +180,15 @@ public class DAO {
 
         while (!curDate.equals(endDate)) {
             if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
-                // no availability on this day, so create one
-                createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+                // check if there's a cancelled availability
+                if (checkAvailability(lid, curDate.toString(), "UNAVAILABLE")) {
+                    // there's an availability here, so make "AVAILABLE" and update price accordingly
+                    updateAvailabilityStatus(lid, curDate.toString(), "AVAILABLE");
+                    updateAvailabilityPrice(lid, curDate.toString(), price);
+                } else {
+                    // no availability on this day, so create one
+                    createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+                }
             }
             curDate = curDate.plusDays(1);
         }
