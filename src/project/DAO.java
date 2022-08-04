@@ -68,15 +68,10 @@ public class DAO {
         return result;
     }
 
-    public int getListingID(int hid, String type, double latitude, double longitude, int aid, String status) throws SQLException {
+    public int getListingID(int aid) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
-                "SELECT * FROM Listings WHERE uid=? AND type=? AND latitude=? AND longitude=? AND aid=? AND status=?");
-        stmt.setInt(1, hid);
-        stmt.setString(2, type);
-        stmt.setDouble(3, latitude);
-        stmt.setDouble(4, longitude);
-        stmt.setInt(5, aid);
-        stmt.setString(6, status);
+                "SELECT * FROM Listings WHERE aid=?");
+        stmt.setInt(1, aid);
         ResultSet rs = stmt.executeQuery();
         int result = -1;
         if (rs.next()) {
@@ -336,8 +331,7 @@ public class DAO {
         stmt.setInt(5, aid);
         stmt.setString(6, "ACTIVE");
         stmt.executeUpdate();
-        //System.out.println("LISTING CREATED");
-        return getListingID(hid, type, latitude, longitude, aid, "ACTIVE");
+        return getListingID(aid);
     }
 
     public void offerAmenity(int lid, String description) throws SQLException{
