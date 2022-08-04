@@ -109,6 +109,49 @@ public class DAO {
         return rs.next();
     }
 
+    /* Returns true if an availability has been booked in the range. */
+    public boolean checkBookedInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Bookings WHERE lid=? AND Status!='CANCELLED' AND (" +
+                        "(StartDate BETWEEN ? AND ?) OR (EndDate BETWEEN ? AND ?)" +
+                        "OR (? BETWEEN StartDate AND EndDate) OR (? BETWEEN StartDate AND EndDate))");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        stmt.setString(4, start);
+        stmt.setString(5, end);
+        stmt.setString(6, start);
+        stmt.setString(7, end);
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    /* Updates the price of availabilities in a given date range. Returns the number of availabilities modified. */
+    public int updateAvailabilityInRange(int lid, String start, String end, double price) throws SQLException {
+        LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+        int count = 0;
+
+        while (!curDate.equals(endDate)) {
+            if (checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
+                updateAvailability(lid, curDate.toString(), price); // availability exists, so update the price
+                count++;
+            }
+            curDate = curDate.plusDays(1);
+        }
+        return count;
+    }
+
+    public void updateAvailability(int lid, String day, double price) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Price=? WHERE lid=? AND Day=?");
+        stmt.setDouble(1, price);
+        stmt.setInt(2, lid);
+        stmt.setString(3, day);
+        stmt.executeUpdate();
+    }
+
     public void createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
         LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
         LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
