@@ -16,9 +16,8 @@ public class Driver {
     public static void displayDefaultMenu() {
         System.out.println("1: Sign Up");
         System.out.println("2: Log In");
-        System.out.println("3: Delete User");
-        System.out.println("4: View Reports");
-        System.out.println("5: Exit");
+        System.out.println("3: View Reports");
+        System.out.println("4: Exit");
     }
 
     public static void displayRenterMenu() {
@@ -26,7 +25,8 @@ public class Driver {
         System.out.println("2: View Upcoming Bookings"); // -> can cancel a booking
         System.out.println("3: View Past Bookings"); // -> can select a booking to leave a review
         System.out.println("4: Leave A Review About A Host");
-        System.out.println("5: Log Out");
+        System.out.println("5: Delete Account");
+        System.out.println("6: Log Out");
     }
 
     public static void displayHostMenu() {
@@ -34,7 +34,8 @@ public class Driver {
         System.out.println("2: View Your Listings"); // -> can select a listing and then update price or availability
         System.out.println("3: View Upcoming Bookings"); // -> can cancel a booking
         System.out.println("4: Leave A Review About A Renter"); // -> take text and rating input
-        System.out.println("5: Log Out");
+        System.out.println("5: Delete Account");
+        System.out.println("6: Log Out");
     }
 
     public static boolean signup() {
@@ -497,10 +498,6 @@ public class Driver {
                 }
                 break;
             case 3:
-//                deleteUser()
-                System.out.println("User Deleted Successfully");
-                break;
-            case 4:
 //                handleReports()
                 break;
             default:
@@ -544,6 +541,16 @@ public class Driver {
                 }
                 break;
             case 5:
+                try {
+                    dao.deleteHost(loggedInUser.getUid());
+                    System.out.println("User deleted successfully");
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case 6:
                 System.out.println("Thank you for using MyBnB!");
                 isLoggedIn = false;
                 loggedInUser = null;
@@ -556,7 +563,7 @@ public class Driver {
     }
 
     public static List<Booking> displayBookings(String status) throws SQLException {
-//        dao.updateBookingStatus();
+//        dao.updateBookingsStatus();
         List<Booking> bookings;
         if (loggedInUser.getClass().equals(Renter.class)) {
             bookings = dao.getRentersBookings(status, loggedInUser.getUid());
@@ -579,7 +586,7 @@ public class Driver {
         Booking booking = bookings.get(input);
         dao.updateCalendar(booking.getLid(), booking.getStartDate(),
                 booking.getEndDate(), "AVAILABLE");
-        dao.cancelBooking(booking.getBid());
+        dao.updateBooking(booking.getBid());
         System.out.println("Booking canceled successfully");
     }
 
@@ -674,6 +681,16 @@ public class Driver {
                     }
                     break;
                 case 5:
+                    try {
+                        dao.deleteHost(loggedInUser.getUid());
+                        System.out.println("User deleted successfully");
+                        isLoggedIn = false;
+                        loggedInUser = null;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 6:
                     System.out.println("Thank you for using MyBnB!");
                     isLoggedIn = false;
                     break;
@@ -715,7 +732,7 @@ public class Driver {
 
                     System.out.print("Enter Input: ");
                     int choice = scanner.nextInt();
-                    if (choice == 5) {
+                    if (choice == 4) {
                         break;
                     }
                     isLoggedIn = handleDefaultInput(choice);
