@@ -1,16 +1,13 @@
 package project;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.Locale;
-import java.util.Scanner;
+import java.util.*;
 
 public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "";
+    public static final String password = "HAVISHU19";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -133,7 +130,7 @@ public class Driver {
         return false;
     }
 
-    public static void displayListings() throws SQLException {
+    public static List<Listing> displayListings() throws SQLException {
         System.out.println("Choose base search option: ");
         System.out.println("1: All listings");
         System.out.println("2: Listings near a coordinate");
@@ -276,7 +273,10 @@ public class Driver {
         for (int j=0; j<listings.size(); j++) {
             System.out.println(j + ") " + listings.get(j));
         }
+
+        return listings;
     }
+
     /* Displays all host's listings and allows host to select which they want to update */
     public static void viewHostListings() {
         System.out.println("===== All active listings =====");
@@ -460,6 +460,23 @@ public class Driver {
         System.out.println("Finished adding amenities");
     }
 
+    public static void createBooking(List<Listing> listings) throws SQLException {
+        System.out.print("Select a listing you would like to book: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > listings.size()) {
+            System.out.println("Invalid Listing");
+            return;
+        }
+        System.out.print("Enter start-date end-date (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+        String endDate = scanner.next();
+        Booking booking = Booking.create(dao, loggedInUser.getUid(),
+                listings.get(input).getLid(), startDate, endDate);
+        if (booking != null) {
+            System.out.println("New booking was created for cost of " + booking.getCost());
+        }
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -510,9 +527,16 @@ public class Driver {
 //                handleUpdateListing()
                 break;
             case 3:
-//                displayUpcomingBookings(host)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
+                try {
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 4:
 //                displayRenters(host)
@@ -531,28 +555,77 @@ public class Driver {
         return isLoggedIn;
     }
 
+    public static List<Booking> displayBookings(String status) throws SQLException {
+//        dao.updateBookingStatus();
+        List<Booking> bookings;
+        if (loggedInUser.getClass().equals(Renter.class)) {
+            bookings = dao.getRentersBookings(status, loggedInUser.getUid());
+        } else {
+            bookings = dao.getHostsBookings(status, loggedInUser.getUid());
+        }
+        for (int i=0; i<bookings.size(); i++) {
+            System.out.println(i + ") " + bookings.get(i).print(dao));
+        }
+        return bookings;
+    }
+
+    public static void cancelBooking(List<Booking> bookings) throws SQLException {
+        System.out.print("Select a booking you would like to cancel: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > bookings.size()) {
+            System.out.println("Invalid Booking");
+            return;
+        }
+        Booking booking = bookings.get(input);
+        dao.updateCalendar(booking.getLid(), booking.getStartDate(),
+                booking.getEndDate(), "AVAILABLE");
+        dao.cancelBooking(booking.getBid());
+        System.out.println("Booking canceled successfully");
+    }
+
+    public static void reviewBooking(List<Booking> bookings) {
+        System.out.print("Select a booking you would like to review: ");
+    }
+
     public static boolean handleRenterInput(int choice) {
         boolean isLoggedIn = true;
         switch (choice) {
             case 1:
                 try{
-                    displayListings();
-                    System.out.println("Select a listing you would like to book: ");
-//                    handleBooking()
+                    List<Listing> listings = displayListings();
+                    if (!listings.isEmpty()) {
+                        createBooking(listings);
+                    } else {
+                        System.out.println("No listings to display");
+                    }
                 } catch (SQLException sql) {
                     sql.printStackTrace();
-                    System.out.println("Something went wrong");
+                    System.out.println("Something went wrong trying to retrieve listings or create a booking");
                 }
                 break;
             case 2:
-//                displayUpcomingBookings(renter)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
+                try {
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 3:
-//                displayPastBookings(renter)
-                System.out.println("Select a booking you would like to review: ");
-//                handleReviewBooking()
+                try {
+                    List<Booking> bookings = displayBookings("PAST");
+                    if (!bookings.isEmpty()) {
+                        reviewBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 4:
 //                displayHosts(renter)
