@@ -43,6 +43,18 @@ public class Booking {
         }
     }
 
+    public String print(DAO dao) {
+        String str;
+        try {
+            Listing listing = dao.getListingFromID(lid);
+            str =  listing.toString();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            str = "listing id: " + lid;
+        }
+        return str + " from " + startDate + " to " + endDate + " for cost of " + cost;
+    }
+
     public double getCost() {
         return cost;
     }

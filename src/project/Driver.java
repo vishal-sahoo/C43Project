@@ -7,7 +7,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "";
+    public static final String password = "HAVISHU19";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -459,7 +459,7 @@ public class Driver {
         System.out.println("Finished adding amenities");
     }
 
-    public static void handleBooking(List<Listing> listings) throws SQLException {
+    public static void createBooking(List<Listing> listings) throws SQLException {
         System.out.print("Select a listing you would like to book: ");
         int input = scanner.nextInt();
         if (input < 0 || input > listings.size()) {
@@ -526,9 +526,14 @@ public class Driver {
 //                handleUpdateListing()
                 break;
             case 3:
-//                displayUpcomingBookings(host)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
+                try {
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 4:
 //                displayRenters(host)
@@ -547,6 +552,28 @@ public class Driver {
         return isLoggedIn;
     }
 
+    public static List<Booking> displayBookings(String status) throws SQLException {
+        dao.updateBookingStatus();
+        List<Booking> bookings;
+        if (loggedInUser.getClass().equals(Renter.class)) {
+            bookings = dao.getRentersBookings(status, loggedInUser.getUid());
+        } else {
+            bookings = dao.getHostsBookings(status, loggedInUser.getUid());
+        }
+        for (int i=0; i<bookings.size(); i++) {
+            System.out.println(i + ") " + bookings.get(i).print(dao));
+        }
+        return bookings;
+    }
+
+    public static void cancelBooking(List<Booking> bookings) {
+        System.out.println("Select a booking you would like to cancel: ");
+    }
+
+    public static void reviewBooking(List<Booking> bookings) {
+        System.out.println("Select a booking you would like to review: ");
+    }
+
     public static boolean handleRenterInput(int choice) {
         boolean isLoggedIn = true;
         switch (choice) {
@@ -554,22 +581,32 @@ public class Driver {
                 try{
                     List<Listing> listings = displayListings();
                     if (!listings.isEmpty()) {
-                        handleBooking(listings);
+                        createBooking(listings);
                     }
                 } catch (SQLException sql) {
                     sql.printStackTrace();
-                    System.out.println("Something went wrong");
+                    System.out.println("Something went wrong trying to retrieve listings or create a booking");
                 }
                 break;
             case 2:
-//                displayUpcomingBookings(renter)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
+                try {
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 3:
-//                displayPastBookings(renter)
-                System.out.println("Select a booking you would like to review: ");
-//                handleReviewBooking()
+                try {
+                    List<Booking> bookings = displayBookings("PAST");
+                    if (!bookings.isEmpty()) {
+                        reviewBooking(bookings);
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 4:
 //                displayHosts(renter)

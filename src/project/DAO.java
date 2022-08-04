@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 
 public class DAO {
 
@@ -335,6 +336,76 @@ public class DAO {
         stmt.executeUpdate();
 
         return getBooking(lid, startDate, endDate);
+    }
+
+    public List<Booking> getRentersBookings(String status, int rid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE Status = ? AND RID = ?");
+        stmt.setString(1, status);
+        stmt.setInt(2, rid);
+        ResultSet rs = stmt.executeQuery();
+
+        List<Booking> bookings = new ArrayList<Booking>();
+        if (rs.next()) {
+            int bid = rs.getInt("BID");
+            int lid = rs.getInt("LID");
+            String startDate = rs.getString("StartDate");
+            String endDate = rs.getString("EndDate");
+            Double cost = rs.getDouble("Cost");
+            String review = rs.getString("Review");
+            int rating = rs.getInt("Rating");
+            bookings.add(new Booking(bid, rid, lid, startDate, endDate, cost, status, review, rating));
+        }
+        return bookings;
+    }
+
+    public List<Booking> getHostsBookings(String status, int hid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT B.* FROM Bookings B, Listings L " +
+                "WHERE B.LID=L.LID AND B.Status = ? AND L.UID = ?");
+        stmt.setString(1, status);
+        stmt.setInt(2, hid);
+        ResultSet rs = stmt.executeQuery();
+
+        List<Booking> bookings = new ArrayList<Booking>();
+        if (rs.next()) {
+            int bid = rs.getInt("BID");
+            int rid = rs.getInt("RID");
+            int lid = rs.getInt("LID");
+            String startDate = rs.getString("StartDate");
+            String endDate = rs.getString("EndDate");
+            Double cost = rs.getDouble("Cost");
+            String review = rs.getString("Review");
+            int rating = rs.getInt("Rating");
+            bookings.add(new Booking(bid, rid, lid, startDate, endDate, cost, status, review, rating));
+        }
+        return bookings;
+    }
+
+    public Listing getListingFromID(int lid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings " +
+                "NATURAL JOIN Addresses WHERE LID=?");
+        stmt.setInt(1, lid);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            String type = rs.getString("Type");
+            double latitude = rs.getDouble("Latitude");
+            double longitude = rs.getDouble("Longitude");
+
+            int aid = rs.getInt("AID");
+            String address = rs.getString("Address");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            String postalCode = rs.getString("PostalCode");
+
+            Address newAddress = new Address(aid, address, city, country, postalCode);
+            return new Listing(lid, type, latitude, longitude, newAddress);
+        }
+        return null;
+    }
+
+    public void updateBookingStatus() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Bookings SET Status='PAST' " +
+                "WHERE EndDate < CURDATE()");
+        stmt.executeUpdate();
     }
 
     public boolean deleteUser() {

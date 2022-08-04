@@ -1,7 +1,5 @@
 package project;
 
-import java.util.Locale;
-
 public class User {
     private int uid;
     private String sin;
