@@ -203,7 +203,7 @@ public class Driver {
         System.out.print("Would you like to filter by date range? (y/n): ");
         String response = scanner.next();
         if (response.toLowerCase().equals("y")) {
-            System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
+            System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
             query1.append("SELECT * FROM Base WHERE LID IN (SELECT L.LID FROM Listings L, Calendars C " +
@@ -467,7 +467,7 @@ public class Driver {
             System.out.println("Invalid Listing");
             return;
         }
-        System.out.print("Enter start-date end-date (YYYY-MM-DD): ");
+        System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
         String startDate = scanner.next();
         String endDate = scanner.next();
         Booking booking = Booking.create(dao, loggedInUser.getUid(),
