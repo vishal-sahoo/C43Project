@@ -332,7 +332,7 @@ public class Driver {
         } else if (input == 2) {
             modifyAvailability(lid);
         } else if (input == 3) {
-            System.out.println("remove an availability, only if it hasn't been booked");
+            cancelAvailability(lid);
         }
     }
 
@@ -392,8 +392,38 @@ public class Driver {
         // if not, make the modification
         try {
             int modified = dao.updateAvailabilityInRange(lid, startDate, endDate, price);
-            System.out.println("Availabilities modified!");
+            System.out.println("Availabilities modified.");
             System.out.println("Total number of availabilities changed: " + modified);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+    }
+
+    public static void cancelAvailability(int lid) {
+        System.out.print("Enter start date to cancel (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date for modification (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // check if an availability in range has been booked
+        try {
+            if (dao.checkBookedInRange(lid, startDate, endDate)) {
+                System.out.println("Price could not be changed as an availability within this " +
+                        "date range has already been booked.");
+                return;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+
+        // if not, cancel all availabilities in range
+        try {
+            int modified = dao.cancelAvailabilitiesInRange(lid, startDate, endDate);
+            System.out.println("Availabilities cancelled.");
+            System.out.println("Total number of availabilities cancelled: " + modified);
         } catch (SQLException sql) {
             sql.printStackTrace();
             System.out.println("Issue accessing database");
