@@ -313,12 +313,13 @@ public class DAO {
         return -1;
     }
 
-    public void updateCalendar(int lid, String startDate, String endDate) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status = 'BOOKED' " +
+    public void updateCalendar(int lid, String startDate, String endDate, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status = ? " +
                 "WHERE LID = ? AND Day BETWEEN ? AND ?");
-        stmt.setInt(1, lid);
-        stmt.setString(2, startDate);
-        stmt.setString(3, endDate);
+        stmt.setString(1, status);
+        stmt.setInt(2, lid);
+        stmt.setString(3, startDate);
+        stmt.setString(4, endDate);
         stmt.executeUpdate();
     }
 
@@ -408,15 +409,18 @@ public class DAO {
         stmt.executeUpdate();
     }
 
+    public void cancelBooking(int bid) throws SQLException {
+        // update calendar
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Bookings SET Status='CANCELED' " +
+                "WHERE BID = ?");
+        stmt.setInt(1, bid);
+        stmt.executeUpdate();
+    }
+
     public boolean deleteUser() {
         return false;
         // remove listings
         // cancel relevant bookings
-    }
-
-    public boolean cancelBooking() {
-        return false;
-        // update calendar
     }
 
     public boolean removeListing() {

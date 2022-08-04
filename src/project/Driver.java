@@ -530,6 +530,8 @@ public class Driver {
                     List<Booking> bookings = displayBookings("UPCOMING");
                     if (!bookings.isEmpty()) {
                         cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
                     }
                 } catch (Exception e) {
                     System.out.println("Something went wrong trying to retrieve bookings");
@@ -553,7 +555,7 @@ public class Driver {
     }
 
     public static List<Booking> displayBookings(String status) throws SQLException {
-        dao.updateBookingStatus();
+//        dao.updateBookingStatus();
         List<Booking> bookings;
         if (loggedInUser.getClass().equals(Renter.class)) {
             bookings = dao.getRentersBookings(status, loggedInUser.getUid());
@@ -566,12 +568,22 @@ public class Driver {
         return bookings;
     }
 
-    public static void cancelBooking(List<Booking> bookings) {
-        System.out.println("Select a booking you would like to cancel: ");
+    public static void cancelBooking(List<Booking> bookings) throws SQLException {
+        System.out.print("Select a booking you would like to cancel: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > bookings.size()) {
+            System.out.println("Invalid Booking");
+            return;
+        }
+        Booking booking = bookings.get(input);
+        dao.updateCalendar(booking.getLid(), booking.getStartDate(),
+                booking.getEndDate(), "AVAILABLE");
+        dao.cancelBooking(booking.getBid());
+        System.out.println("Booking canceled successfully");
     }
 
     public static void reviewBooking(List<Booking> bookings) {
-        System.out.println("Select a booking you would like to review: ");
+        System.out.print("Select a booking you would like to review: ");
     }
 
     public static boolean handleRenterInput(int choice) {
@@ -582,6 +594,8 @@ public class Driver {
                     List<Listing> listings = displayListings();
                     if (!listings.isEmpty()) {
                         createBooking(listings);
+                    } else {
+                        System.out.println("No listings to display");
                     }
                 } catch (SQLException sql) {
                     sql.printStackTrace();
@@ -593,6 +607,8 @@ public class Driver {
                     List<Booking> bookings = displayBookings("UPCOMING");
                     if (!bookings.isEmpty()) {
                         cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
                     }
                 } catch (Exception e) {
                     System.out.println("Something went wrong trying to retrieve bookings");
@@ -603,6 +619,8 @@ public class Driver {
                     List<Booking> bookings = displayBookings("PAST");
                     if (!bookings.isEmpty()) {
                         reviewBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
                     }
                 } catch (Exception e) {
                     System.out.println("Something went wrong trying to retrieve bookings");

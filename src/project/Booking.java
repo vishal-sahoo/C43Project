@@ -34,7 +34,7 @@ public class Booking {
                 System.out.println("Something went wrong computing the cost");
                 return null;
             } else {
-                dao.updateCalendar(lid, startDate, endDate);
+                dao.updateCalendar(lid, startDate, endDate, "BOOKED");
                 return dao.createBooking(uid, lid, startDate, endDate, cost);
             }
         } else {
@@ -58,4 +58,12 @@ public class Booking {
     public double getCost() {
         return cost;
     }
+
+    public int getLid() { return lid; }
+
+    public int getBid() { return bid; }
+
+    public String getStartDate() { return startDate; }
+
+    public String getEndDate() { return endDate; }
 }
