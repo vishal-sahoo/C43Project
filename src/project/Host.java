@@ -6,8 +6,8 @@ import java.util.Locale;
 public class Host extends User {
 
     public Host(int uid, String sin, String email, String occupation, String password,
-                  String dob, String name, int aid) {
-        super(uid, sin, email, occupation, password, dob, name, aid);
+                  String dob, String name, int aid, String status) {
+        super(uid, sin, email, occupation, password, dob, name, aid, status);
     }
 
     public Host(User user) {
@@ -34,7 +34,8 @@ public class Host extends User {
         User user = dao.getUserOnEmail(email);
         if (user != null) {
             Host host = dao.getHostFromUser(user);
-            if (host != null && host.getPassword().equals(password)) {
+            if (host != null && host.getPassword().equals(password) &&
+                    host.getStatus().equals("ACTIVE")) {
                 return host;
             }
         }

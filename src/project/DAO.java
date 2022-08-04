@@ -28,7 +28,8 @@ public class DAO {
             String dob = rs.getString("DOB");
             String name = rs.getString("Name");
             int aid = rs.getInt("AID");
-            user = new User(uid, sin, email, occupation, password, dob, name, aid);
+            String status = rs.getString("Status");
+            user = new User(uid, sin, email, occupation, password, dob, name, aid, status);
         }
         return user;
     }
@@ -440,8 +441,8 @@ public class DAO {
             String dob = rs.getString("DOB");
             String name = rs.getString("Name");
             int aid = rs.getInt("AID");
-
-            users.add(new User(uid, sin, email, occupation, password, dob, name, aid));
+            String status = rs.getString("Status");
+            users.add(new User(uid, sin, email, occupation, password, dob, name, aid, status));
         }
         return users;
     }
@@ -461,8 +462,8 @@ public class DAO {
             String dob = rs.getString("DOB");
             String name = rs.getString("Name");
             int aid = rs.getInt("AID");
-
-            users.add(new User(uid, sin, email, occupation, password, dob, name, aid));
+            String status = rs.getString("Status");
+            users.add(new User(uid, sin, email, occupation, password, dob, name, aid, status));
         }
         return users;
     }
