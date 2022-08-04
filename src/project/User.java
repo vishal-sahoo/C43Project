@@ -54,4 +54,8 @@ public class User {
         return uid;
     }
     public String getPassword() {return password;}
+
+    public String toString() {
+        return name + " is a " + occupation;
+    }
 }

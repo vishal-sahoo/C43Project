@@ -43,7 +43,7 @@ public class Booking {
         }
     }
 
-    public String print(DAO dao) {
+    public String display(DAO dao) {
         String str;
         try {
             Listing listing = dao.getListingFromID(lid);
@@ -52,7 +52,12 @@ public class Booking {
             e.printStackTrace();
             str = "listing id: " + lid;
         }
-        return str + " from " + startDate + " to " + endDate + " for cost of " + cost;
+        if (status.equals("PAST") && review != null) {
+            return str + " from " + startDate + " to " + endDate + " for cost of " + cost +
+                    "\nreview: " + review + "\nrating: " + rating;
+        } else {
+            return str + " from " + startDate + " to " + endDate + " for cost of " + cost;
+        }
     }
 
     public double getCost() {
@@ -66,4 +71,6 @@ public class Booking {
     public String getStartDate() { return startDate; }
 
     public String getEndDate() { return endDate; }
+
+    public String getReview() { return review; }
 }
