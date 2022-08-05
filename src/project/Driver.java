@@ -7,7 +7,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "HAVISHU19";
+    public static final String password = "";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -642,10 +642,6 @@ public class Driver {
                 }
                 break;
             case 3:
-//                deleteUser()
-                System.out.println("User Deleted Successfully");
-                break;
-            case 4:
                 try {
                     handleReports();
                 } catch (SQLException e) {
