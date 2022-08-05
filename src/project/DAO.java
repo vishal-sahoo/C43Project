@@ -124,7 +124,7 @@ public class DAO {
     }
 
     /* Returns true if there is an availability with given lid, day, and status. */
-    public boolean checkAvailability(int lid, String day, String status) throws SQLException {
+    public boolean checkSingleAvailability(int lid, String day, String status) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
                 "SELECT * FROM Calendars WHERE lid=? AND Day=? AND Status=?");
         stmt.setInt(1, lid);
@@ -222,7 +222,7 @@ public class DAO {
         while (!curDate.equals(endDate)) {
             if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
                 // check if there's a cancelled availability
-                if (checkAvailability(lid, curDate.toString(), "UNAVAILABLE")) {
+                if (checkSingleAvailability(lid, curDate.toString(), "UNAVAILABLE")) {
                     // there's an availability here, so make "AVAILABLE" and update price accordingly
                     updateAvailabilityStatus(lid, curDate.toString(), "AVAILABLE");
                     updateAvailabilityPrice(lid, curDate.toString(), price);
