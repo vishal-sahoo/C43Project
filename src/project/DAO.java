@@ -28,7 +28,8 @@ public class DAO {
             String dob = rs.getString("DOB");
             String name = rs.getString("Name");
             int aid = rs.getInt("AID");
-            user = new User(uid, sin, email, occupation, password, dob, name, aid);
+            String status = rs.getString("Status");
+            user = new User(uid, sin, email, occupation, password, dob, name, aid, status);
         }
         return user;
     }
@@ -513,13 +514,13 @@ public class DAO {
         return null;
     }
 
-    public void updateBookingStatus() throws SQLException {
+    public void updateBookingsStatus() throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("UPDATE Bookings SET Status='PAST' " +
                 "WHERE EndDate < CURDATE()");
         stmt.executeUpdate();
     }
 
-    public void cancelBooking(int bid) throws SQLException {
+    public void updateBooking(int bid) throws SQLException {
         // update calendar
         PreparedStatement stmt = conn.prepareStatement("UPDATE Bookings SET Status='CANCELED' " +
                 "WHERE BID = ?");
@@ -527,15 +528,116 @@ public class DAO {
         stmt.executeUpdate();
     }
 
-    public boolean deleteUser() {
-        return false;
+    public void reviewBooking(int bid, String review, int rating) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE bookings SET Review = ?, Rating = ? WHERE BID = ?");
+        stmt.setString(1, review);
+        stmt.setInt(2, rating);
+        stmt.setInt(3, bid);
+        stmt.executeUpdate();
+    }
+
+    public List<User> getHostsOfRenter(int rid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT U.* FROM Bookings B, Listings L, Users U " +
+                "WHERE B.LID = L.LID AND L.UID = U.UID AND B.RID = ? AND B.Status = 'PAST'");
+        stmt.setInt(1, rid);
+        ResultSet rs = stmt.executeQuery();
+        List<User> users = new ArrayList<>();
+        while (rs.next()) {
+            int uid = rs.getInt("UID");
+            String sin = rs.getString("SIN");
+            String email = rs.getString("Email");
+            String occupation = rs.getString("Occupation");
+            String password = rs.getString("Password");
+            String dob = rs.getString("DOB");
+            String name = rs.getString("Name");
+            int aid = rs.getInt("AID");
+            String status = rs.getString("Status");
+            users.add(new User(uid, sin, email, occupation, password, dob, name, aid, status));
+        }
+        return users;
+    }
+
+    public List<User> getRentersOfHost(int hid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT U.* FROM Bookings B, Listings L, Users U " +
+                "WHERE B.LID = L.LID AND B.RID = U.UID AND L.UID = ? AND B.Status = 'PAST'");
+        stmt.setInt(1, hid);
+        ResultSet rs = stmt.executeQuery();
+        List<User> users = new ArrayList<>();
+        while (rs.next()) {
+            int uid = rs.getInt("UID");
+            String sin = rs.getString("SIN");
+            String email = rs.getString("Email");
+            String occupation = rs.getString("Occupation");
+            String password = rs.getString("Password");
+            String dob = rs.getString("DOB");
+            String name = rs.getString("Name");
+            int aid = rs.getInt("AID");
+            String status = rs.getString("Status");
+            users.add(new User(uid, sin, email, occupation, password, dob, name, aid, status));
+        }
+        return users;
+    }
+
+    public void reviewUser(int reviewer, int reviewee, String review, int rating) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Reviews" +
+                "(Reviewer, Reviewee, Comment, Rating) VALUES (?, ?, ?, ?)");
+        stmt.setInt(1, reviewer);
+        stmt.setInt(2, reviewee);
+        stmt.setString(3, review);
+        stmt.setInt(4, rating);
+        stmt.executeUpdate();
+    }
+
+    public void deleteRenter(int uid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings " +
+                "WHERE Status = 'UPCOMING' AND RID = ?");
+        stmt.setInt(1, uid);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            int lid = rs.getInt("LID");
+            int bid = rs.getInt("BID");
+            String startDate = rs.getString("StartDate");
+            String endDate = rs.getString("EndDate");
+            updateCalendar(lid, startDate, endDate, "AVAILABLE");
+            updateBooking(bid);
+        }
+        PreparedStatement stmt1 = conn.prepareStatement("UPDATE Users SET Status = 'INACTIVE' WHERE UID = ?");
+        stmt1.setInt(1, uid);
+        stmt1.executeUpdate();
         // remove listings
         // cancel relevant bookings
     }
 
-    public boolean removeListing() {
-        return false;
+    public void removeListing(int lid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings " +
+                "WHERE Status = 'UPCOMING' AND LID = ?");
+        stmt.setInt(1, lid);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            int bid = rs.getInt("BID");
+            String startDate = rs.getString("StartDate");
+            String endDate = rs.getString("EndDate");
+            updateCalendar(lid, startDate, endDate, "AVAILABLE");
+            updateBooking(bid);
+        }
+        PreparedStatement stmt1 = conn.prepareStatement("UPDATE Listings SET Status = 'INACTIVE' WHERE LID = ?");
+        stmt1.setInt(1, lid);
+        stmt1.executeUpdate();
         // cancel relevant bookings
+    }
+
+    public void deleteHost(int uid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings " +
+                "WHERE Status = 'ACTIVE' AND UID = ?");
+        stmt.setInt(1, uid);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            int lid = rs.getInt("LID");
+            removeListing(lid);
+        }
+        PreparedStatement stmt1 = conn.prepareStatement("UPDATE Users SET Status = 'INACTIVE' WHERE UID = ?");
+        stmt1.setInt(1, uid);
+        stmt1.executeUpdate();
     }
 
     public boolean updatePrice() {
@@ -547,15 +649,6 @@ public class DAO {
     public boolean changeAvailability() {
         return false;
         // host can make an available listing unavailable on a given date
-    }
-
-    public boolean reviewBooking() {
-        return false;
-    }
-
-    public boolean reviewUser() {
-        return false;
-        // renter or host can leave a rating and/or comment about the other
     }
 
     public void close() throws SQLException {
