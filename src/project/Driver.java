@@ -279,10 +279,10 @@ public class Driver {
 
     /* Displays all host's listings and allows host to select which they want to update */
     public static void viewHostListings() {
-        System.out.println("===== All active listings =====");
         try {
             boolean exit = false;
             while (!exit) {
+                System.out.println("===== All active listings =====");
                 ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
 
                 // print out the listings
@@ -290,11 +290,23 @@ public class Driver {
                     System.out.println(i + 1 + ": " + hostListings.get(i));
                 }
 
-                // get input for updating listings
-                System.out.print("Would you like to update a listing? (y/n): ");
+                // get input for updating or viewing listings
+                System.out.println("Options:");
+                System.out.println("a. View availabilities for a listing");
+                System.out.println("b. Update a listing");
+                System.out.println("c. Exit");
+                System.out.print("Select an option: ");
                 String input = scanner.next();
 
-                if (input.equals("y")) {
+                if (input.equals("a")) {
+                    System.out.println("Enter listing number to view availabilities");
+                    int listing = scanner.nextInt();
+                    if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
+                        viewAvailabilities(hostListings.get(listing - 1).getLid());
+                    } else {
+                        System.out.println("Invalid input.");
+                    }
+                } else if (input.equals("b")) {
                     System.out.print("Enter listing number to update: ");
                     int listing = scanner.nextInt();
                     if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
@@ -302,7 +314,7 @@ public class Driver {
                     } else {
                         System.out.println("Invalid input.");
                     }
-                } else if (input.equals("n")) {
+                } else if (input.equals("c")) {
                     exit = true;
                 } else {
                     System.out.println("Invalid input.");
@@ -316,20 +328,44 @@ public class Driver {
 
     }
 
+    /* Allows host to view availabilities for a listing within a date range. */
+    public static void viewAvailabilities(int lid) {
+        System.out.print("Enter start date (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // display the availabilities
+        try {
+            ArrayList<Calendar> availabilities = dao.getAvailabilitiesInRange(lid, startDate, endDate);
+
+            for (int i = 0; i < availabilities.size(); i++) {
+                System.out.println(availabilities.get(i));
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue retrieving availabilities");
+        }
+    }
+
     /* Allows host to update listing with id lid */
     public static void updateListing(int lid) {
-        System.out.println("LID IS: " + lid);
+        //System.out.println("LID IS: " + lid);
         System.out.println("Possible operations: ");
         System.out.println("1. Add availability");
-        System.out.println("2. Modify availability");
+        System.out.println("2. Modify availability price");
+        System.out.println("3. Remove availability");
 
-        System.out.print("Select operation: ");
+        System.out.print("Select operation (-1 to exit): ");
         int input = scanner.nextInt();
 
         if (input == 1) {
             addAvailability(lid);
         } else if (input == 2) {
-            System.out.println("modify an availability (including price), only if it hasn't been booked");
+            modifyAvailability(lid);
+        } else if (input == 3) {
+            cancelAvailability(lid);
         }
     }
 
@@ -360,6 +396,70 @@ public class Driver {
         } catch (SQLException sql) {
             sql.printStackTrace();
             System.out.println("Issue adding availabilities");
+        }
+    }
+
+    /* Deals with inputs for modifying an availability's price */
+    public static void modifyAvailability(int lid) {
+        System.out.print("Enter start date for modification (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date for modification (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        System.out.print("Enter new price: ");
+        double price = scanner.nextDouble();
+
+        // check if availability in range has been booked
+        try {
+            if (dao.checkBookedInRange(lid, startDate, endDate)) {
+                System.out.println("Price could not be changed as an availability within this " +
+                        "date range has already been booked.");
+                return;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+
+        // if not, make the modification
+        try {
+            int modified = dao.updateAvailabilityInRange(lid, startDate, endDate, price);
+            System.out.println("Availabilities modified.");
+            System.out.println("Total number of availabilities changed: " + modified);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+    }
+
+    public static void cancelAvailability(int lid) {
+        System.out.print("Enter start date to cancel (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date for modification (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // check if an availability in range has been booked
+        try {
+            if (dao.checkBookedInRange(lid, startDate, endDate)) {
+                System.out.println("Price could not be changed as an availability within this " +
+                        "date range has already been booked.");
+                return;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+
+        // if not, cancel all availabilities in range
+        try {
+            int modified = dao.cancelAvailabilitiesInRange(lid, startDate, endDate);
+            System.out.println("Availabilities cancelled.");
+            System.out.println("Total number of availabilities cancelled: " + modified);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
         }
     }
 

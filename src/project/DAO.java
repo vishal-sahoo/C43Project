@@ -69,15 +69,10 @@ public class DAO {
         return result;
     }
 
-    public int getListingID(int hid, String type, double latitude, double longitude, int aid, String status) throws SQLException {
+    public int getListingID(int aid) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
-                "SELECT * FROM Listings WHERE uid=? AND type=? AND latitude=? AND longitude=? AND aid=? AND status=?");
-        stmt.setInt(1, hid);
-        stmt.setString(2, type);
-        stmt.setDouble(3, latitude);
-        stmt.setDouble(4, longitude);
-        stmt.setInt(5, aid);
-        stmt.setString(6, status);
+                "SELECT * FROM Listings WHERE aid=?");
+        stmt.setInt(1, aid);
         ResultSet rs = stmt.executeQuery();
         int result = -1;
         if (rs.next()) {
@@ -99,15 +94,124 @@ public class DAO {
         return amenities;
     }
 
-    /* Returns true if there are already availabilities in the given date range. */
-    public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+    public ArrayList<Calendar> getAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
                 "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ?");
         stmt.setInt(1, lid);
         stmt.setString(2, start);
         stmt.setString(3, end);
         ResultSet rs = stmt.executeQuery();
+        ArrayList<Calendar> result = new ArrayList<>();
+        while (rs.next()) {
+            String day = rs.getString("Day");
+            double price = rs.getDouble("Price");
+            String status = rs.getString("Status");
+
+            result.add(new Calendar(lid, day, price, status));
+        }
+        return result;
+    }
+
+    /* Returns true if there are already availabilities in the given date range. */
+    public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ? AND Status!=?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        stmt.setString(4, "UNAVAILABLE");
+        ResultSet rs = stmt.executeQuery();
         return rs.next();
+    }
+
+    /* Returns true if there is an availability with given lid, day, and status. */
+    public boolean checkSingleAvailability(int lid, String day, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day=? AND Status=?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, day);
+        stmt.setString(3, status);
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    /* Returns true if an availability has been booked in the range. */
+    public boolean checkBookedInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Bookings WHERE lid=? AND Status!='CANCELLED' AND (" +
+                        "(StartDate BETWEEN ? AND ?) OR (EndDate BETWEEN ? AND ?)" +
+                        "OR (? BETWEEN StartDate AND EndDate) OR (? BETWEEN StartDate AND EndDate))");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        stmt.setString(4, start);
+        stmt.setString(5, end);
+        stmt.setString(6, start);
+        stmt.setString(7, end);
+        ResultSet rs = stmt.executeQuery();
+        return rs.next();
+    }
+
+    /* Sets all availabilities in range to "UNAVAILABLE", assuming there are no booked availabilities in range.
+    * Returns the number of availabilities cancelled in the date range. */
+    public int cancelAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+        LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+        int count = 0;
+
+        while (!curDate.equals(endDate)) {
+            if (checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
+                cancelAvailability(lid, curDate.toString());
+                count++;
+            }
+            curDate = curDate.plusDays(1);
+        }
+        return count;
+    }
+
+    /* Sets the status of an availability to "UNAVAILABLE". */
+    public void cancelAvailability(int lid, String day) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE Calendars SET Status='UNAVAILABLE' WHERE lid=? AND Day=?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, day);
+        stmt.executeUpdate();
+    }
+
+    /* Updates the price of availabilities in a given date range. Returns the number of availabilities modified. */
+    public int updateAvailabilityInRange(int lid, String start, String end, double price) throws SQLException {
+        LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+        int count = 0;
+
+        while (!curDate.equals(endDate)) {
+            if (checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
+                updateAvailabilityPrice(lid, curDate.toString(), price); // availability exists, so update the price
+                count++;
+            }
+            curDate = curDate.plusDays(1);
+        }
+        return count;
+    }
+
+    public void updateAvailabilityPrice(int lid, String day, double price) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Price=? WHERE lid=? AND Day=?");
+        stmt.setDouble(1, price);
+        stmt.setInt(2, lid);
+        stmt.setString(3, day);
+        stmt.executeUpdate();
+    }
+
+    public void updateAvailabilityStatus(int lid, String day, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status=? WHERE lid=? AND Day=?");
+        stmt.setString(1, status);
+        stmt.setInt(2, lid);
+        stmt.setString(3, day);
+        stmt.executeUpdate();
     }
 
     public void createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
@@ -118,8 +222,15 @@ public class DAO {
 
         while (!curDate.equals(endDate)) {
             if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
-                // no availability on this day, so create one
-                createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+                // check if there's a cancelled availability
+                if (checkSingleAvailability(lid, curDate.toString(), "UNAVAILABLE")) {
+                    // there's an availability here, so make "AVAILABLE" and update price accordingly
+                    updateAvailabilityStatus(lid, curDate.toString(), "AVAILABLE");
+                    updateAvailabilityPrice(lid, curDate.toString(), price);
+                } else {
+                    // no availability on this day, so create one
+                    createAvailability(lid, curDate.toString(), price, "AVAILABLE");
+                }
             }
             curDate = curDate.plusDays(1);
         }
@@ -256,8 +367,7 @@ public class DAO {
         stmt.setInt(5, aid);
         stmt.setString(6, "ACTIVE");
         stmt.executeUpdate();
-        //System.out.println("LISTING CREATED");
-        return getListingID(hid, type, latitude, longitude, aid, "ACTIVE");
+        return getListingID(aid);
     }
 
     public void offerAmenity(int lid, String description) throws SQLException{
