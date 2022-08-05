@@ -7,7 +7,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "HAVISHU19";
+    public static final String password = "";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -381,9 +381,8 @@ public class Driver {
         System.out.print("Enter price: ");
         double price = scanner.nextDouble();
 
-        // check that there are no availabilities there already
         try {
-            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
+            if (Calendar.checkAvailabilitiesInRange(dao, lid, startDate, endDate)) {
                 System.out.println("Availabilities already exist within this range. New availabilities will " +
                         "be created around these old ones and old ones will remain unmodified.");
             }
@@ -392,13 +391,32 @@ public class Driver {
             System.out.println("Issue accessing availabilities in database.");
         }
 
-        // add the availabilities
         try {
-            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
+            int created = Calendar.createAvailability(dao, lid, startDate, endDate, price);
+            System.out.println("Number of availabilities made available: " + created);
         } catch (SQLException sql) {
             sql.printStackTrace();
             System.out.println("Issue adding availabilities");
         }
+
+//        // check that there are no availabilities there already
+//        try {
+//            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
+//                System.out.println("Availabilities already exist within this range. New availabilities will " +
+//                        "be created around these old ones and old ones will remain unmodified.");
+//            }
+//        } catch (SQLException sql) {
+//            sql.printStackTrace();
+//            System.out.println("Issue accessing availabilities in database.");
+//        }
+//
+//        // add the availabilities
+//        try {
+//            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
+//        } catch (SQLException sql) {
+//            sql.printStackTrace();
+//            System.out.println("Issue adding availabilities");
+//        }
     }
 
     /* Deals with inputs for modifying an availability's price */
@@ -414,7 +432,7 @@ public class Driver {
 
         // check if availability in range has been booked
         try {
-            if (dao.checkBookedInRange(lid, startDate, endDate)) {
+            if (Calendar.checkBookedInRange(dao, lid, startDate, endDate)) {
                 System.out.println("Price could not be changed as an availability within this " +
                         "date range has already been booked.");
                 return;
@@ -426,7 +444,7 @@ public class Driver {
 
         // if not, make the modification
         try {
-            int modified = dao.updateAvailabilityInRange(lid, startDate, endDate, price);
+            int modified = Calendar.updateAvailabilityInRange(dao, lid, startDate, endDate, price);
             System.out.println("Availabilities modified.");
             System.out.println("Total number of availabilities changed: " + modified);
         } catch (SQLException sql) {
@@ -444,9 +462,8 @@ public class Driver {
 
         // check if an availability in range has been booked
         try {
-            if (dao.checkBookedInRange(lid, startDate, endDate)) {
-                System.out.println("Price could not be changed as an availability within this " +
-                        "date range has already been booked.");
+            if (Calendar.checkBookedInRange(dao, lid, startDate, endDate)) {
+                System.out.println("An availability within this date range has already been booked.");
                 return;
             }
         } catch (SQLException sql) {
@@ -456,7 +473,7 @@ public class Driver {
 
         // if not, cancel all availabilities in range
         try {
-            int modified = dao.cancelAvailabilitiesInRange(lid, startDate, endDate);
+            int modified = Calendar.cancelAvailabilitiesInRange(dao, lid, startDate, endDate);
             System.out.println("Availabilities cancelled.");
             System.out.println("Total number of availabilities cancelled: " + modified);
         } catch (SQLException sql) {

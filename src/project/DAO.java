@@ -215,11 +215,13 @@ public class DAO {
         stmt.executeUpdate();
     }
 
-    public void createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
+    /* Returns the number of availabilities created */
+    public int createAvailabilitiesInRange(int lid, String start, String end, double price) throws SQLException {
         LocalDate curDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
         LocalDate endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
 
         endDate = endDate.plusDays(1); // add 1 day to include range's endpoints
+        int count = 0;
 
         while (!curDate.equals(endDate)) {
             if (!checkAvailabilitiesInRange(lid, curDate.toString(), curDate.toString())) {
@@ -232,9 +234,11 @@ public class DAO {
                     // no availability on this day, so create one
                     createAvailability(lid, curDate.toString(), price, "AVAILABLE");
                 }
+                count++;
             }
             curDate = curDate.plusDays(1);
         }
+        return count;
     }
 
     public void createAvailability(int lid, String day, double price, String status) throws SQLException {
