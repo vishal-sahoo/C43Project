@@ -398,25 +398,6 @@ public class Driver {
             sql.printStackTrace();
             System.out.println("Issue adding availabilities");
         }
-
-//        // check that there are no availabilities there already
-//        try {
-//            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
-//                System.out.println("Availabilities already exist within this range. New availabilities will " +
-//                        "be created around these old ones and old ones will remain unmodified.");
-//            }
-//        } catch (SQLException sql) {
-//            sql.printStackTrace();
-//            System.out.println("Issue accessing availabilities in database.");
-//        }
-//
-//        // add the availabilities
-//        try {
-//            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
-//        } catch (SQLException sql) {
-//            sql.printStackTrace();
-//            System.out.println("Issue adding availabilities");
-//        }
     }
 
     /* Deals with inputs for modifying an availability's price */
