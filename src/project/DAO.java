@@ -93,6 +93,24 @@ public class DAO {
         return amenities;
     }
 
+    public ArrayList<Calendar> getAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM Calendars WHERE lid=? AND Day BETWEEN ? AND ?");
+        stmt.setInt(1, lid);
+        stmt.setString(2, start);
+        stmt.setString(3, end);
+        ResultSet rs = stmt.executeQuery();
+        ArrayList<Calendar> result = new ArrayList<>();
+        while (rs.next()) {
+            String day = rs.getString("Day");
+            double price = rs.getDouble("Price");
+            String status = rs.getString("Status");
+
+            result.add(new Calendar(lid, day, price, status));
+        }
+        return result;
+    }
+
     /* Returns true if there are already availabilities in the given date range. */
     public boolean checkAvailabilitiesInRange(int lid, String start, String end) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(

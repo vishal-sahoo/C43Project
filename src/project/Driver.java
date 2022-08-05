@@ -279,10 +279,10 @@ public class Driver {
     }
     /* Displays all host's listings and allows host to select which they want to update */
     public static void viewHostListings() {
-        System.out.println("===== All active listings =====");
         try {
             boolean exit = false;
             while (!exit) {
+                System.out.println("===== All active listings =====");
                 ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
 
                 // print out the listings
@@ -290,11 +290,23 @@ public class Driver {
                     System.out.println(i + 1 + ": " + hostListings.get(i));
                 }
 
-                // get input for updating listings
-                System.out.print("Would you like to update a listing? (y/n): ");
+                // get input for updating or viewing listings
+                System.out.println("Options:");
+                System.out.println("a. View availabilities for a listing");
+                System.out.println("b. Update a listing");
+                System.out.println("c. Exit");
+                System.out.print("Select an option: ");
                 String input = scanner.next();
 
-                if (input.equals("y")) {
+                if (input.equals("a")) {
+                    System.out.println("Enter listing number to view availabilities");
+                    int listing = scanner.nextInt();
+                    if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
+                        viewAvailabilities(hostListings.get(listing - 1).getLid());
+                    } else {
+                        System.out.println("Invalid input.");
+                    }
+                } else if (input.equals("b")) {
                     System.out.print("Enter listing number to update: ");
                     int listing = scanner.nextInt();
                     if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
@@ -302,7 +314,7 @@ public class Driver {
                     } else {
                         System.out.println("Invalid input.");
                     }
-                } else if (input.equals("n")) {
+                } else if (input.equals("c")) {
                     exit = true;
                 } else {
                     System.out.println("Invalid input.");
@@ -316,6 +328,27 @@ public class Driver {
 
     }
 
+    /* Allows host to view availabilities for a listing within a date range. */
+    public static void viewAvailabilities(int lid) {
+        System.out.print("Enter start date (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // display the availabilities
+        try {
+            ArrayList<Calendar> availabilities = dao.getAvailabilitiesInRange(lid, startDate, endDate);
+
+            for (int i = 0; i < availabilities.size(); i++) {
+                System.out.println(availabilities.get(i));
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue retrieving availabilities");
+        }
+    }
+
     /* Allows host to update listing with id lid */
     public static void updateListing(int lid) {
         //System.out.println("LID IS: " + lid);
@@ -324,7 +357,7 @@ public class Driver {
         System.out.println("2. Modify availability price");
         System.out.println("3. Remove availability");
 
-        System.out.print("Select operation: ");
+        System.out.print("Select operation (-1 to exit): ");
         int input = scanner.nextInt();
 
         if (input == 1) {
