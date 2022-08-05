@@ -299,7 +299,7 @@ public class Driver {
                 String input = scanner.next();
 
                 if (input.equals("a")) {
-                    System.out.println("Enter listing number to view availabilities");
+                    System.out.print("Enter listing number to view availabilities: ");
                     int listing = scanner.nextInt();
                     if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
                         viewAvailabilities(hostListings.get(listing - 1).getLid());
@@ -343,6 +343,7 @@ public class Driver {
             for (int i = 0; i < availabilities.size(); i++) {
                 System.out.println(availabilities.get(i));
             }
+            System.out.println("Total number of availabilities in this range: " + availabilities.size());
         } catch (SQLException sql) {
             sql.printStackTrace();
             System.out.println("Issue retrieving availabilities");
