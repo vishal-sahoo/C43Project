@@ -1,7 +1,5 @@
 package project;
 
-import java.util.Locale;
-
 public class User {
     private int uid;
     private String sin;
@@ -12,8 +10,10 @@ public class User {
     private String name;
     private int aid;
 
+    private String status;
+
     public User(int uid, String sin, String email, String occupation, String password,
-                String dob, String name, int aid) {
+                String dob, String name, int aid, String status) {
         this.uid = uid;
         this.sin = sin;
         this.email = email;
@@ -22,6 +22,7 @@ public class User {
         this.dob = dob;
         this.name = name;
         this.aid = aid;
+        this.status = status;
     }
 
     public User(User user) {
@@ -33,6 +34,7 @@ public class User {
         this.dob = user.dob;
         this.name = user.name;
         this.aid = user.aid;
+        this.status = user.status;
     }
 
     public static void validateParameters(String name, String email, String password, String sin, String dob,
@@ -56,4 +58,9 @@ public class User {
         return uid;
     }
     public String getPassword() {return password;}
+
+    public String getStatus() { return status; }
+    public String toString() {
+        return name + " is a " + occupation;
+    }
 }

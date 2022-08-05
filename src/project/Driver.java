@@ -1,10 +1,7 @@
 package project;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.Locale;
-import java.util.Scanner;
+import java.util.*;
 
 public class Driver {
 
@@ -19,9 +16,8 @@ public class Driver {
     public static void displayDefaultMenu() {
         System.out.println("1: Sign Up");
         System.out.println("2: Log In");
-        System.out.println("3: Delete User");
-        System.out.println("4: View Reports");
-        System.out.println("5: Exit");
+        System.out.println("3: View Reports");
+        System.out.println("4: Exit");
     }
 
     public static void displayRenterMenu() {
@@ -29,7 +25,8 @@ public class Driver {
         System.out.println("2: View Upcoming Bookings"); // -> can cancel a booking
         System.out.println("3: View Past Bookings"); // -> can select a booking to leave a review
         System.out.println("4: Leave A Review About A Host");
-        System.out.println("5: Log Out");
+        System.out.println("5: Delete Account");
+        System.out.println("6: Log Out");
     }
 
     public static void displayHostMenu() {
@@ -37,7 +34,8 @@ public class Driver {
         System.out.println("2: View Your Listings"); // -> can select a listing and then update price or availability
         System.out.println("3: View Upcoming Bookings"); // -> can cancel a booking
         System.out.println("4: Leave A Review About A Renter"); // -> take text and rating input
-        System.out.println("5: Log Out");
+        System.out.println("5: Delete Account");
+        System.out.println("6: Log Out");
     }
 
     public static void displayReportsMenu() {
@@ -139,7 +137,7 @@ public class Driver {
         return false;
     }
 
-    public static void displayListings() throws SQLException {
+    public static List<Listing> displayListings() throws SQLException {
         System.out.println("Choose base search option: ");
         System.out.println("1: All listings");
         System.out.println("2: Listings near a coordinate");
@@ -282,6 +280,8 @@ public class Driver {
         for (int j=0; j<listings.size(); j++) {
             System.out.println(j + ") " + listings.get(j));
         }
+
+        return listings;
     }
 
     public static void handleReports() throws SQLException {
@@ -325,10 +325,10 @@ public class Driver {
 
     /* Displays all host's listings and allows host to select which they want to update */
     public static void viewHostListings() {
-        System.out.println("===== All active listings =====");
         try {
             boolean exit = false;
             while (!exit) {
+                System.out.println("===== All active listings =====");
                 ArrayList<Listing> hostListings = dao.getListingsFromHost(loggedInUser.getUid());
 
                 // print out the listings
@@ -336,11 +336,23 @@ public class Driver {
                     System.out.println(i + 1 + ": " + hostListings.get(i));
                 }
 
-                // get input for updating listings
-                System.out.print("Would you like to update a listing? (y/n): ");
+                // get input for updating or viewing listings
+                System.out.println("Options:");
+                System.out.println("a. View availabilities for a listing");
+                System.out.println("b. Update a listing");
+                System.out.println("c. Exit");
+                System.out.print("Select an option: ");
                 String input = scanner.next();
 
-                if (input.equals("y")) {
+                if (input.equals("a")) {
+                    System.out.print("Enter listing number to view availabilities: ");
+                    int listing = scanner.nextInt();
+                    if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
+                        viewAvailabilities(hostListings.get(listing - 1).getLid());
+                    } else {
+                        System.out.println("Invalid input.");
+                    }
+                } else if (input.equals("b")) {
                     System.out.print("Enter listing number to update: ");
                     int listing = scanner.nextInt();
                     if (listing - 1 >= 0 && listing - 1 < hostListings.size()) {
@@ -348,7 +360,7 @@ public class Driver {
                     } else {
                         System.out.println("Invalid input.");
                     }
-                } else if (input.equals("n")) {
+                } else if (input.equals("c")) {
                     exit = true;
                 } else {
                     System.out.println("Invalid input.");
@@ -362,20 +374,45 @@ public class Driver {
 
     }
 
+    /* Allows host to view availabilities for a listing within a date range. */
+    public static void viewAvailabilities(int lid) {
+        System.out.print("Enter start date (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // display the availabilities
+        try {
+            ArrayList<Calendar> availabilities = dao.getAvailabilitiesInRange(lid, startDate, endDate);
+
+            for (int i = 0; i < availabilities.size(); i++) {
+                System.out.println(availabilities.get(i));
+            }
+            System.out.println("Total number of availabilities in this range: " + availabilities.size());
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue retrieving availabilities");
+        }
+    }
+
     /* Allows host to update listing with id lid */
     public static void updateListing(int lid) {
-        System.out.println("LID IS: " + lid);
+        //System.out.println("LID IS: " + lid);
         System.out.println("Possible operations: ");
         System.out.println("1. Add availability");
-        System.out.println("2. Modify availability");
+        System.out.println("2. Modify availability price");
+        System.out.println("3. Remove availability");
 
-        System.out.print("Select operation: ");
+        System.out.print("Select operation (-1 to exit): ");
         int input = scanner.nextInt();
 
         if (input == 1) {
             addAvailability(lid);
         } else if (input == 2) {
-            System.out.println("modify an availability (including price), only if it hasn't been booked");
+            modifyAvailability(lid);
+        } else if (input == 3) {
+            cancelAvailability(lid);
         }
     }
 
@@ -389,9 +426,8 @@ public class Driver {
         System.out.print("Enter price: ");
         double price = scanner.nextDouble();
 
-        // check that there are no availabilities there already
         try {
-            if (dao.checkAvailabilitiesInRange(lid, startDate, endDate)) {
+            if (Calendar.checkAvailabilitiesInRange(dao, lid, startDate, endDate)) {
                 System.out.println("Availabilities already exist within this range. New availabilities will " +
                         "be created around these old ones and old ones will remain unmodified.");
             }
@@ -400,12 +436,75 @@ public class Driver {
             System.out.println("Issue accessing availabilities in database.");
         }
 
-        // add the availabilities
         try {
-            dao.createAvailabilitiesInRange(lid, startDate, endDate, price);
+            int created = Calendar.createAvailability(dao, lid, startDate, endDate, price);
+            System.out.println("Number of availabilities made available: " + created);
         } catch (SQLException sql) {
             sql.printStackTrace();
             System.out.println("Issue adding availabilities");
+        }
+    }
+
+    /* Deals with inputs for modifying an availability's price */
+    public static void modifyAvailability(int lid) {
+        System.out.print("Enter start date for modification (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date for modification (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        System.out.print("Enter new price: ");
+        double price = scanner.nextDouble();
+
+        // check if availability in range has been booked
+        try {
+            if (Calendar.checkBookedInRange(dao, lid, startDate, endDate)) {
+                System.out.println("Price could not be changed as an availability within this " +
+                        "date range has already been booked.");
+                return;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+
+        // if not, make the modification
+        try {
+            int modified = Calendar.updateAvailabilityInRange(dao, lid, startDate, endDate, price);
+            System.out.println("Availabilities modified.");
+            System.out.println("Total number of availabilities changed: " + modified);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+    }
+
+    public static void cancelAvailability(int lid) {
+        System.out.print("Enter start date to cancel (YYYY-MM-DD): ");
+        String startDate = scanner.next();
+
+        System.out.print("Enter end date for modification (YYYY-MM-DD): ");
+        String endDate = scanner.next();
+
+        // check if an availability in range has been booked
+        try {
+            if (Calendar.checkBookedInRange(dao, lid, startDate, endDate)) {
+                System.out.println("An availability within this date range has already been booked.");
+                return;
+            }
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
+        }
+
+        // if not, cancel all availabilities in range
+        try {
+            int modified = Calendar.cancelAvailabilitiesInRange(dao, lid, startDate, endDate);
+            System.out.println("Availabilities cancelled.");
+            System.out.println("Total number of availabilities cancelled: " + modified);
+        } catch (SQLException sql) {
+            sql.printStackTrace();
+            System.out.println("Issue accessing database");
         }
     }
 
@@ -506,6 +605,23 @@ public class Driver {
         System.out.println("Finished adding amenities");
     }
 
+    public static void createBooking(List<Listing> listings) throws SQLException {
+        System.out.print("Select a listing you would like to book: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > listings.size()) {
+            System.out.println("Invalid Listing");
+            return;
+        }
+        System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
+        String startDate = scanner.next();
+        String endDate = scanner.next();
+        Booking booking = Booking.create(dao, loggedInUser.getUid(),
+                listings.get(input).getLid(), startDate, endDate);
+        if (booking != null) {
+            System.out.println("New booking was created for cost of " + booking.getCost());
+        }
+    }
+
     public static boolean handleDefaultInput(int choice) {
         boolean isLoggedIn = false;
         switch (choice) {
@@ -548,29 +664,46 @@ public class Driver {
         boolean isLoggedIn = true;
         switch (choice) {
             case 1:
-//                getListingInput()
-//                hostToolKit()
-//                createListing()
                 createListing();
-
                 break;
             case 2:
-//                displayListings(host)
                 viewHostListings();
-                //System.out.println("Select a listing you would like to update: ");
-//                handleUpdateListing()
                 break;
             case 3:
-//                displayUpcomingBookings(host)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
+                try {
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Something went wrong trying to retrieve bookings");
+                }
                 break;
             case 4:
-//                displayRenters(host)
-                System.out.println("Select a renter you would like to review: ");
-//                handleLeaveReview()
+                try {
+                    List<User> renters = displayUsers();
+                    if (!renters.isEmpty()) {
+                        reviewUser(renters);
+                    } else {
+                        System.out.println("No renters to display");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 break;
             case 5:
+                try {
+                    dao.deleteHost(loggedInUser.getUid());
+                    System.out.println("User deleted successfully");
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case 6:
                 System.out.println("Thank you for using MyBnB!");
                 isLoggedIn = false;
                 loggedInUser = null;
@@ -582,41 +715,141 @@ public class Driver {
         return isLoggedIn;
     }
 
+    public static List<Booking> displayBookings(String status) throws SQLException {
+//        dao.updateBookingsStatus();
+        List<Booking> bookings;
+        if (loggedInUser.getClass().equals(Renter.class)) {
+            bookings = dao.getRentersBookings(status, loggedInUser.getUid());
+        } else {
+            bookings = dao.getHostsBookings(status, loggedInUser.getUid());
+        }
+        for (int i=0; i<bookings.size(); i++) {
+            System.out.println(i + ") " + bookings.get(i).display(dao));
+        }
+        return bookings;
+    }
+
+    public static void cancelBooking(List<Booking> bookings) throws SQLException {
+        System.out.print("Select a booking you would like to cancel: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > bookings.size()) {
+            System.out.println("Invalid Booking");
+            return;
+        }
+        Booking booking = bookings.get(input);
+        dao.updateCalendar(booking.getLid(), booking.getStartDate(),
+                booking.getEndDate(), "AVAILABLE");
+        dao.updateBooking(booking.getBid());
+        System.out.println("Booking canceled successfully");
+    }
+
+    public static void reviewBooking(List<Booking> bookings) throws SQLException {
+        System.out.print("Select a booking you would like to review: ");
+        int input = scanner.nextInt();
+        if (input < 0 || input > bookings.size()) {
+            System.out.println("Invalid Booking");
+            return;
+        }
+        Booking booking = bookings.get(input);
+        if (booking.getReview() != null) {
+            System.out.println("Selected booking has been reviewed");
+            return;
+        }
+        scanner.nextLine();
+        System.out.print("Review: ");
+        String review = scanner.nextLine();
+        System.out.print("Rating (0-5): ");
+        int rating = scanner.nextInt();
+        dao.reviewBooking(booking.getBid(), review, rating);
+        System.out.println("Booking reviewed successfully");
+    }
+
+    public static List<User> displayUsers() throws SQLException {
+        List<User> users;
+        if (loggedInUser.getClass().equals(Renter.class)) {
+            users = dao.getHostsOfRenter(loggedInUser.getUid());
+        } else {
+            users = dao.getRentersOfHost(loggedInUser.getUid());
+        }
+        for (int i=0; i<users.size(); i++) {
+            System.out.println(i + ") " + users.get(i));
+        }
+        return users;
+    }
+
+    public static void reviewUser(List<User> users) throws SQLException {
+        if (loggedInUser.getClass().equals(Renter.class)) {
+            System.out.print("Select a host you would like to review: ");
+        } else {
+            System.out.print("Select a renter you would like to review: ");
+        }
+        int input = scanner.nextInt();
+        if (input < 0 || input > users.size()) {
+            System.out.println("Invalid User");
+            return;
+        }
+        scanner.nextLine();
+        System.out.print("Review: ");
+        String review = scanner.nextLine();
+        System.out.print("Rating (0-5): ");
+        int rating = scanner.nextInt();
+        dao.reviewUser(loggedInUser.getUid(), users.get(input).getUid(), review, rating);
+        System.out.println("Review added successfully");
+    }
+
     public static boolean handleRenterInput(int choice) {
         boolean isLoggedIn = true;
-        switch (choice) {
-            case 1:
-                try{
-                    displayListings();
-                    System.out.println("Select a listing you would like to book: ");
-//                    handleBooking()
-                } catch (SQLException sql) {
-                    sql.printStackTrace();
-                    System.out.println("Something went wrong");
-                }
-                break;
-            case 2:
-//                displayUpcomingBookings(renter)
-                System.out.println("Select a booking you would like to cancel: ");
-//                handleCancelBooking()
-                break;
-            case 3:
-//                displayPastBookings(renter)
-                System.out.println("Select a booking you would like to review: ");
-//                handleReviewBooking()
-                break;
-            case 4:
-//                displayHosts(renter)
-                System.out.println("Select a host you would like to review: ");
-//                handleReviewHost()
-                break;
-            case 5:
-                System.out.println("Thank you for using MyBnB!");
-                isLoggedIn = false;
-                break;
-            default:
-                System.out.println("Invalid Choice");
-                break;
+        try {
+            switch (choice) {
+                case 1:
+                    List<Listing> listings = displayListings();
+                    if (!listings.isEmpty()) {
+                        createBooking(listings);
+                    } else {
+                        System.out.println("No listings to display");
+                    }
+                    break;
+                case 2:
+                    List<Booking> bookings = displayBookings("UPCOMING");
+                    if (!bookings.isEmpty()) {
+                        cancelBooking(bookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                    break;
+                case 3:
+                    List<Booking> pastBookings = displayBookings("PAST");
+                    if (!pastBookings.isEmpty()) {
+                        reviewBooking(pastBookings);
+                    } else {
+                        System.out.println("No bookings to display");
+                    }
+                    break;
+                case 4:
+                    List<User> hosts = displayUsers();
+                    if (!hosts.isEmpty()) {
+                        reviewUser(hosts);
+                    } else {
+                        System.out.println("No hosts to display");
+                    }
+                    break;
+                case 5:
+                    dao.deleteRenter(loggedInUser.getUid());
+                    System.out.println("User deleted successfully");
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                    break;
+                case 6:
+                    System.out.println("Thank you for using MyBnB!");
+                    isLoggedIn = false;
+                    break;
+                default:
+                    System.out.println("Invalid Choice");
+                    break;
+            }
+        } catch (Exception e) {
+            System.out.println("Something went wrong");
+            e.printStackTrace();
         }
         return isLoggedIn;
     }
@@ -648,7 +881,7 @@ public class Driver {
 
                     System.out.print("Enter Input: ");
                     int choice = scanner.nextInt();
-                    if (choice == 5) {
+                    if (choice == 4) {
                         break;
                     }
                     isLoggedIn = handleDefaultInput(choice);
