@@ -635,7 +635,7 @@ public class Driver {
                     if (!renters.isEmpty()) {
                         reviewUser(renters);
                     } else {
-                        System.out.println("No hosts to display");
+                        System.out.println("No renters to display");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -782,14 +782,10 @@ public class Driver {
                     }
                     break;
                 case 5:
-                    try {
-                        dao.deleteHost(loggedInUser.getUid());
-                        System.out.println("User deleted successfully");
-                        isLoggedIn = false;
-                        loggedInUser = null;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    dao.deleteRenter(loggedInUser.getUid());
+                    System.out.println("User deleted successfully");
+                    isLoggedIn = false;
+                    loggedInUser = null;
                     break;
                 case 6:
                     System.out.println("Thank you for using MyBnB!");

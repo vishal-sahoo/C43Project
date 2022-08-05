@@ -640,17 +640,6 @@ public class DAO {
         stmt1.executeUpdate();
     }
 
-    public boolean updatePrice() {
-        return false;
-        // not allowed if already booked
-        // host can change the price of a listing given a date range
-    }
-
-    public boolean changeAvailability() {
-        return false;
-        // host can make an available listing unavailable on a given date
-    }
-
     public void close() throws SQLException {
         conn.close();
     }
