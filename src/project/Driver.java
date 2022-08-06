@@ -44,6 +44,7 @@ public class Driver {
         System.out.println("3: Rank hosts based on number of listings per country (or city)");
         System.out.println("4: ");
         System.out.println("5: Rank renters based on number of bookings in a date range (and city)");
+        System.out.println("6: Hosts or renters with highest number of cancellations");
     }
     public static boolean signup() {
         System.out.print("Enter 1 for Renter or 2 for Host: ");
@@ -291,6 +292,7 @@ public class Driver {
         // 3) rank hosts based on num of listings per country (or by city)
         // 4)
         // 5) rank renters by num of bookings in a date range (optional per city)
+        // 6) hosts or renters with highest number of cancellations
         displayReportsMenu();
         System.out.print("Enter Input: ");
         int choice = scanner.nextInt();
@@ -329,6 +331,19 @@ public class Driver {
                 System.out.print("Would you also like to rank by city? (y/n): ");
                 input = scanner.next().trim().toLowerCase(Locale.ROOT);
                 dao.rankRenters(startDate, endDate, input);
+                break;
+            case 6:
+                System.out.print("Would you like to view hosts or renters? (host, renter, both): ");
+                String hostRenter = scanner.next().trim().toLowerCase(Locale.ROOT);
+
+                if(!hostRenter.equals("host") && !hostRenter.equals("renter") && !hostRenter.equals("both")) {
+                    System.out.println("Invalid input.");
+                    return;
+                }
+
+                System.out.print("Enter year of interest: ");
+                String year = scanner.next().trim();
+                dao.reportCancellations(hostRenter, year);
                 break;
             default:
                 break;

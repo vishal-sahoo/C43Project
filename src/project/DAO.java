@@ -779,6 +779,47 @@ public class DAO {
         }
     }
 
+    public void reportCancellations(String hostRenter, String year) throws SQLException {
+        PreparedStatement stmt;
+        if (hostRenter.equals("host")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b, Listings l " +
+                    "WHERE b.Status='CANCELED' AND b.lid=l.LID AND l.uid=u.UID AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+        } else if (hostRenter.equals("renter")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b " +
+                    "WHERE u.UID=b.RID AND b.Status='CANCELED' AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+        } else {
+            stmt = conn.prepareStatement("(SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b " +
+                    "WHERE u.UID=b.RID AND b.Status='CANCELED' AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID) " +
+                    "UNION  " +
+                    "(SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b, Listings l " +
+                    "WHERE b.Status='CANCELED' AND b.lid=l.LID AND l.uid=u.UID AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID) " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+            stmt.setString(3, year);
+            stmt.setString(4, year);
+        }
+        stmt.setString(1, year);
+        stmt.setString(2, year);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            System.out.println(name + ", " + num);
+        }
+    }
+
     // more reports to be added
 
     public void close() throws SQLException {
