@@ -747,6 +747,27 @@ public class DAO {
         }
     }
 
+    /* Reports the hosts that have a num of listings more than 10% the num of listings in that city, country */
+    public void reportHost() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) AS NumListing, City, Country, u.Name " +
+                "FROM Listings l NATURAL JOIN Addresses a1, Users u " +
+                "WHERE l.Status='ACTIVE' AND u.UID=l.UID " +
+                "GROUP BY Country, City, l.UID " +
+                "HAVING NumListing >= 0.1 * ( " +
+                "    SELECT COUNT(*) " +
+                "    FROM Listings c NATURAL JOIN Addresses a2 " +
+                "    WHERE Status='ACTIVE' AND a2.Country=a1.Country AND a1.City=a2.City) " +
+                "ORDER BY City, Country");
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            int numListing = rs.getInt("NumListing");
+            System.out.println(name + " with " + numListing + " listings in " + city + ", " + country);
+        }
+    }
+
     /* Ranks renters by num of bookings */
     public void rankRenters(String startDate, String endDate, String input) throws SQLException {
         PreparedStatement stmt;
