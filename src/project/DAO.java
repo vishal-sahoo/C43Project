@@ -461,7 +461,7 @@ public class DAO {
         ResultSet rs = stmt.executeQuery();
 
         List<Booking> bookings = new ArrayList<Booking>();
-        if (rs.next()) {
+        while (rs.next()) {
             int bid = rs.getInt("BID");
             int lid = rs.getInt("LID");
             String startDate = rs.getString("StartDate");
@@ -482,7 +482,7 @@ public class DAO {
         ResultSet rs = stmt.executeQuery();
 
         List<Booking> bookings = new ArrayList<Booking>();
-        if (rs.next()) {
+        while (rs.next()) {
             int bid = rs.getInt("BID");
             int rid = rs.getInt("RID");
             int lid = rs.getInt("LID");
