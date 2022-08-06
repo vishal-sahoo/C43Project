@@ -644,6 +644,182 @@ public class DAO {
         stmt1.executeUpdate();
     }
 
+    public List<Amenity> getAmenitiesListByLID(int lid) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT Category, Description FROM Offers " +
+                "NATURAL JOIN Amenities WHERE LID = ?");
+        stmt.setInt(1, lid);
+        ResultSet rs = stmt.executeQuery();
+        List<Amenity> amenities = new ArrayList<>();
+        while(rs.next()) {
+            String description = rs.getString("Description");
+            String category = rs.getString("Category");
+            amenities.add(new Amenity(description, category));
+        }
+        return amenities;
+    }
+
+    public String amenitiesListToString(List<Amenity> amenities) {
+        StringBuilder set = new StringBuilder();
+        set.append("(");
+        for (int i=0; i<amenities.size(); i++) {
+            if (i==0) {
+                set.append("'" + amenities.get(i).getDescription() + "'");
+            } else {
+                set.append("," + "'" + amenities.get(i).getDescription() + "'");
+            }
+        }
+        set.append(")");
+        return set.toString();
+    }
+
+    public double avgPriceOfListings(String type, List<Amenity> amenities, String country) throws SQLException{
+        String set = amenitiesListToString(amenities);
+        PreparedStatement stmt = null;
+        if (amenities.isEmpty()) {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses WHERE Type = ? AND Country = ?), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        } else {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses WHERE Type = ? AND Country = ?), " +
+                    "Filter2 AS (SELECT LID FROM Listings NATURAL JOIN Offers " +
+                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.size() + "), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) AND LID IN (SELECT * FROM Filter2) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        }
+        stmt.setString(1, type);
+        stmt.setString(2, country);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble("RESULT");
+        }
+        return -1;
+    }
+
+    public double avgPriceOfListings(String type, List<Amenity> amenities, String country,
+                                     String city) throws SQLException{
+        String set = amenitiesListToString(amenities);
+        PreparedStatement stmt = null;
+        if (amenities.isEmpty()) {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses " +
+                    "WHERE Type = ? AND Country = ? AND City = ?), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        } else {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses " +
+                    "WHERE Type = ? AND Country = ? AND City = ?), " +
+                    "Filter2 AS (SELECT LID FROM Listings NATURAL JOIN Offers " +
+                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.size() + "), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) AND LID IN (SELECT * FROM Filter2) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        }
+        stmt.setString(1, type);
+        stmt.setString(2, country);
+        stmt.setString(3, city);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble("RESULT");
+        }
+        return -1;
+    }
+
+    public double avgPriceOfListings(String type, List<Amenity> amenities, String country,
+                                     String city, String postalCode) throws SQLException{
+        String set = amenitiesListToString(amenities);
+        PreparedStatement stmt = null;
+        if (amenities.isEmpty()) {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses " +
+                    "WHERE Type = ? AND Country = ? AND City = ? AND PostalCode = ?), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        } else {
+            stmt = conn.prepareStatement("WITH Filter1 AS " +
+                    "(SELECT LID FROM Listings NATURAL JOIN Addresses " +
+                    "WHERE Type = ? AND Country = ? AND City = ? AND PostalCode = ?), " +
+                    "Filter2 AS (SELECT LID FROM Listings NATURAL JOIN Offers " +
+                    "WHERE Description IN " + set + " GROUP BY LID HAVING COUNT(*)=" + amenities.size() + "), " +
+                    "temp AS (SELECT AVG(Price) AS Price FROM Calendars " +
+                    "WHERE LID IN (SELECT * FROM Filter1) AND LID IN (SELECT * FROM Filter2) " +
+                    "GROUP BY LID) SELECT AVG(Price) AS RESULT FROM temp");
+        }
+        stmt.setString(1, type);
+        stmt.setString(2, country);
+        stmt.setString(3, city);
+        stmt.setString(4, postalCode);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble("RESULT");
+        }
+        return -1;
+    }
+
+    public List<Amenity> getCommonEssentials(List<Amenity> offered) throws SQLException {
+//        Map<Amenity, Double> result = new HashMap<>();
+        String set = amenitiesListToString(offered);
+        List<Amenity> result = new ArrayList<>();
+        PreparedStatement stmt = null;
+        if (offered.isEmpty()) {
+            stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
+                    "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
+                    "NATURAL JOIN Amenities WHERE Category IN ('essentials', 'safety') " +
+                    "GROUP BY Description ORDER BY Prop DESC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
+                    "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
+                    "NATURAL JOIN Amenities WHERE Category IN ('essentials', 'safety') " +
+                    "AND Description NOT IN " + set +
+                    " GROUP BY Description ORDER BY Prop DESC");
+        }
+
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String description = rs.getString("Description");
+            String category = rs.getString("Category");
+            Double ratio = rs.getDouble("Prop");
+//            result.put(new Amenity(description, category), ratio);
+            result.add(new Amenity(description, category));
+        }
+        return result;
+    }
+
+    public List<Amenity> getUncommonFeatures(List<Amenity> offered) throws SQLException {
+//        Map<Amenity, Double> result = new HashMap<>();
+        String set = amenitiesListToString(offered);
+        List<Amenity> result = new ArrayList<>();
+        PreparedStatement stmt = null;
+        if (offered.isEmpty()) {
+            stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
+                    "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
+                    "NATURAL JOIN Amenities WHERE Category='features' " +
+                    "GROUP BY Description ORDER BY Prop ASC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
+                    "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
+                    "NATURAL JOIN Amenities WHERE Category='features' " +
+                    "AND Description NOT IN " + set +
+                    "GROUP BY Description ORDER BY Prop ASC");
+        }
+
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String description = rs.getString("Description");
+            String category = rs.getString("Category");
+            Double ratio = rs.getDouble("Prop");
+//            result.put(new Amenity(description, category), ratio);
+            result.add(new Amenity(description, category));
+        }
+        return result;
+    }
+
     public void close() throws SQLException {
         conn.close();
     }
