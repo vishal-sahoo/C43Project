@@ -674,7 +674,7 @@ public class DAO {
         ResultSet rs = stmt.executeQuery();
         while(rs.next()) {
             String city = rs.getString("City");
-            int num = rs.getInt("NumBokings");
+            int num = rs.getInt("NumBookings");
             if (postalCode.equals("y")) {
                 String code = rs.getString("PostalCode");
                 System.out.println(city + ", " + code + ", " + num);
@@ -743,6 +743,38 @@ public class DAO {
                 System.out.println(country + ", " + city + ", " + name + ", " + num);
             } else {
                 System.out.println(country + ", " + name + ", " + num);
+            }
+        }
+    }
+
+    /* Ranks renters by num of bookings */
+    public void rankRenters(String startDate, String endDate, String input) throws SQLException {
+        PreparedStatement stmt;
+        if (input.equals("y")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num, City " +
+                    "FROM Bookings b, Users u, Addresses a, Listings l " +
+                    "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.LID=l.LID AND l.AID=a.AID AND b.Status!='CANCELLED' " +
+                    "GROUP BY b.RID, City " +
+                    "HAVING COUNT(b.RID) >= 2 " +
+                    "ORDER BY Num DESC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num FROM Bookings b, Users u " +
+                    "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.Status!='CANCELLED' " +
+                    "GROUP BY b.RID " +
+                    "ORDER BY num DESC");
+        }
+        stmt.setString(1, startDate);
+        stmt.setString(2, endDate);
+        //System.out.println(stmt);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            if (input.equals("y")) {
+                String city = rs.getString("City");
+                System.out.println(name + ", " + city + ", " + num);
+            } else {
+                System.out.println(name + ", " + num);
             }
         }
     }

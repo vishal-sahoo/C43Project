@@ -42,7 +42,8 @@ public class Driver {
         System.out.println("1: Number of bookings in a date range and city (and postal code)");
         System.out.println("2: Number of listings per country (and city (and postal code))");
         System.out.println("3: Rank hosts based on number of listings per country (or city)");
-
+        System.out.println("4: ");
+        System.out.println("5: Rank renters based on number of bookings in a date range (and city)");
     }
     public static boolean signup() {
         System.out.print("Enter 1 for Renter or 2 for Host: ");
@@ -288,6 +289,8 @@ public class Driver {
         // 1) num of bookings in a date range and city (optional postal code)
         // 2) num of listings per country or country and city or country and city and postal code
         // 3) rank hosts based on num of listings per country (or by city)
+        // 4)
+        // 5) rank renters by num of bookings in a date range (optional per city)
         displayReportsMenu();
         System.out.print("Enter Input: ");
         int choice = scanner.nextInt();
@@ -317,6 +320,15 @@ public class Driver {
                 System.out.print("Would you like to rank by city? (y/n): ");
                 String input = scanner.next().trim().toLowerCase(Locale.ROOT);
                 dao.rankHosts(input);
+                break;
+            case 5:
+                System.out.print("Enter start-date end-date (YYYY-MM-DD): ");
+                startDate = scanner.next().trim();
+                endDate = scanner.next().trim();
+
+                System.out.print("Would you also like to rank by city? (y/n): ");
+                input = scanner.next().trim().toLowerCase(Locale.ROOT);
+                dao.rankRenters(startDate, endDate, input);
                 break;
             default:
                 break;
