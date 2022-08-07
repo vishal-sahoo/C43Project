@@ -658,11 +658,22 @@ public class Driver {
             System.out.println("Invalid Listing");
             return;
         }
-        System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
+
+        int lid = listings.get(input).getLid();
+
+        System.out.print("Would you like to see availabilities within a date range for this listing? (y/n): ");
+        String in = scanner.next().trim();
+        while (in.equalsIgnoreCase("y")) {
+            viewAvailabilities(lid);
+            System.out.print("Would you like to see more availabilities? (y/n): ");
+            in = scanner.next().trim();
+        }
+
+        System.out.print("Enter date range to book YYYY-MM-DD YYYY-MM-DD: ");
         String startDate = scanner.next();
         String endDate = scanner.next();
         Booking booking = Booking.create(dao, loggedInUser.getUid(),
-                listings.get(input).getLid(), startDate, endDate);
+                lid, startDate, endDate);
         if (booking != null) {
             System.out.println("New booking was created for cost of " + booking.getCost());
         }
