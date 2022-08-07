@@ -175,8 +175,8 @@ public class Driver {
                     distance = 5000;
                 }
                 query.setLength(0);
-                query.append("WITH temp AS (SELECT *, ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
-                        "point(Latitude, Longitude)) as Distance FROM Listings NATURAL JOIN Addresses " +
+                query.append("WITH temp AS (SELECT *, ST_Distance_Sphere(point("+longitude+", "+latitude+"), " +
+                        "point(Longitude, Latitude)) as Distance FROM Listings NATURAL JOIN Addresses " +
                         "WHERE Status='ACTIVE') " +
                         "SELECT * FROM temp WHERE Distance <= " +distance+ " ORDER BY Distance");
                 coordinateSearch = true;
