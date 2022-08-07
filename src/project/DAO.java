@@ -820,6 +820,23 @@ public class DAO {
         return result;
     }
 
+    public boolean isLegalAge(String dob) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT TIMESTAMPDIFF(YEAR, ?, CURDATE()) >= 18 AS RESULT");
+        stmt.setString(1, dob);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getInt("RESULT") == 1;
+        }
+        return false;
+    }
+
+    public void updateUserStatus(int uid, String status) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Users SET Status = ? WHERE UID = ?");
+        stmt.setString(1, status);
+        stmt.setInt(2, uid);
+        stmt.executeUpdate();
+    }
+
     public void close() throws SQLException {
         conn.close();
     }

@@ -42,57 +42,64 @@ public class Driver {
         System.out.print("Enter 1 for Renter or 2 for Host: ");
         int choice = scanner.nextInt();
 
-        scanner.nextLine();
-        System.out.print("Name: ");
-        String name = scanner.nextLine();
-
         System.out.print("Email: ");
         String email = scanner.next();
 
         System.out.print("Password: ");
         String password = scanner.next();
 
-        System.out.print("SIN: ");
-        String sin = scanner.next();
-
-        System.out.print("DOB (YYYY-MM-DD): ");
-        String dob = scanner.next();
-
-        scanner.nextLine();
-        System.out.print("Occupation: ");
-        String occupation = scanner.nextLine();
-
-        System.out.print("Address: ");
-        String address = scanner.nextLine();
-
-        System.out.print("City: ");
-        String city = scanner.nextLine();
-
-        System.out.print("Country: ");
-        String country = scanner.nextLine();
-
-        System.out.print("Postal Code: ");
-        String postalCode = scanner.next();
-
+        boolean exists = false;
         try {
+            String creditCard = null;
             if (choice == 1) {
                 System.out.print("Credit Card: ");
-                String creditCard = scanner.next();
-                if (!Renter.signup(dao, name, email, password, sin, dob, occupation,
-                        address, city, country, postalCode, creditCard)) {
-                    System.out.println("Email already exists!");
-                } else {
-                    return true;
-                }
+                creditCard = scanner.next();
+                exists = Renter.exists(dao, email, password, creditCard);
             } else if (choice == 2){
-                if (!Host.signup(dao, name, email, password, sin, dob, occupation,
-                        address, city, country, postalCode)) {
-                    System.out.println("Email already exists!");
-                } else {
-                    return true;
-                }
+                exists = Host.exists(dao, email, password);
             } else {
                 System.out.println("Invalid option");
+                return false;
+            }
+
+            if (exists) {
+                return true;
+            }
+
+            scanner.nextLine();
+            System.out.print("Name: ");
+            String name = scanner.nextLine();
+
+            System.out.print("SIN: ");
+            String sin = scanner.next();
+
+            System.out.print("DOB (YYYY-MM-DD): ");
+            String dob = scanner.next();
+
+            scanner.nextLine();
+            System.out.print("Occupation: ");
+            String occupation = scanner.nextLine();
+
+            System.out.print("Address: ");
+            String address = scanner.nextLine();
+
+            System.out.print("City: ");
+            String city = scanner.nextLine();
+
+            System.out.print("Country: ");
+            String country = scanner.nextLine();
+
+            System.out.print("Postal Code: ");
+            String postalCode = scanner.next();
+
+            if (choice == 1) {
+//                System.out.print("Credit Card: ");
+//                String creditCard = scanner.next();
+                return Renter.signup(dao, name, email, password, sin, dob, occupation,
+                        address, city, country, postalCode, creditCard);
+            } else if (choice == 2){
+                return Host.signup(dao, name, email, password, sin, dob, occupation,
+                        address, city, country, postalCode);
             }
         } catch (IllegalArgumentException iae) {
             System.out.println("Please ensure all fields are non-empty");
@@ -664,10 +671,8 @@ public class Driver {
         boolean isLoggedIn = false;
         switch (choice) {
             case 1:
-                if (signup()) {
-                    System.out.println("Sign up successful!");
-                }else {
-                    System.out.println("Please try again");
+                if (!signup()) {
+                    System.out.println("Sign up unsuccessful!");
                 }
                 break;
             case 2:
