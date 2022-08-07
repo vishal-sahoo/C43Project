@@ -140,6 +140,7 @@ public class Driver {
     }
 
     public static List<Listing> displayListings() throws SQLException {
+//        dao.updateCalendarsStatus();
         System.out.println("Choose base search option: ");
         System.out.println("1: All listings");
         System.out.println("2: Listings near a coordinate");

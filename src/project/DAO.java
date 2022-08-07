@@ -520,7 +520,7 @@ public class DAO {
 
     public void updateBookingsStatus() throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("UPDATE Bookings SET Status='PAST' " +
-                "WHERE EndDate < CURDATE()");
+                "WHERE EndDate < CURDATE() AND Status='UPCOMING'");
         stmt.executeUpdate();
     }
 
@@ -608,7 +608,6 @@ public class DAO {
         PreparedStatement stmt1 = conn.prepareStatement("UPDATE Users SET Status = 'INACTIVE' WHERE UID = ?");
         stmt1.setInt(1, uid);
         stmt1.executeUpdate();
-        // remove listings
         // cancel relevant bookings
     }
 
@@ -642,6 +641,8 @@ public class DAO {
         PreparedStatement stmt1 = conn.prepareStatement("UPDATE Users SET Status = 'INACTIVE' WHERE UID = ?");
         stmt1.setInt(1, uid);
         stmt1.executeUpdate();
+        // remove listings
+        // cancel relevant bookings
     }
 
     public List<Amenity> getAmenitiesListByLID(int lid) throws SQLException {
@@ -834,6 +835,12 @@ public class DAO {
         PreparedStatement stmt = conn.prepareStatement("UPDATE Users SET Status = ? WHERE UID = ?");
         stmt.setString(1, status);
         stmt.setInt(2, uid);
+        stmt.executeUpdate();
+    }
+
+    public void updateCalendarsStatus() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("UPDATE Calendars SET Status='UNAVAILABLE' " +
+                "WHERE Day < CURDATE() AND Status = 'AVAILABLE'");
         stmt.executeUpdate();
     }
 
