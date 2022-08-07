@@ -12,8 +12,4 @@ public class Amenity {
     public String getDescription() {
         return description;
     }
-
-    public String getCategory() {
-        return category;
-    }
 }

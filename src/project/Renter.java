@@ -5,11 +5,6 @@ import java.util.Locale;
 
 public class Renter extends User {
     private String creditCard;
-    public Renter(int uid, String sin, String email, String occupation, String password,
-                String dob, String name, int aid, String status, String creditCard) {
-        super(uid, sin, email, occupation, password, dob, name, aid, status);
-        this.creditCard = creditCard;
-    }
 
     public Renter(User user, String creditCard) {
         super(user);

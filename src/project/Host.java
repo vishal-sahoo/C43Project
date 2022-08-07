@@ -5,11 +5,6 @@ import java.util.Locale;
 
 public class Host extends User {
 
-    public Host(int uid, String sin, String email, String occupation, String password,
-                  String dob, String name, int aid, String status) {
-        super(uid, sin, email, occupation, password, dob, name, aid, status);
-    }
-
     public Host(User user) {
         super(user);
     }

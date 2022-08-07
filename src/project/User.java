@@ -44,14 +44,6 @@ public class User {
             || address.isEmpty() || city.isEmpty() || country.isEmpty() || postalCode.isEmpty()) {
             throw new IllegalArgumentException();
         }
-//        this.name = name;
-//        this.email = email.toLowerCase(Locale.ROOT).trim();
-//        this.password = password;
-//        this.sin = sin.toUpperCase(Locale.ROOT);
-//        this.dob = dob;
-//        this.occupation = occupation.toLowerCase(Locale.ROOT);
-//        this.address = address.toLowerCase(Locale.ROOT).trim();
-
     }
 
     public int getUid() {

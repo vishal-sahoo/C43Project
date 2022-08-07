@@ -105,8 +105,6 @@ public class Driver {
             String postalCode = scanner.next();
 
             if (choice == 1) {
-//                System.out.print("Credit Card: ");
-//                String creditCard = scanner.next();
                 return Renter.signup(dao, name, email, password, sin, dob, occupation,
                         address, city, country, postalCode, creditCard);
             } else if (choice == 2){
@@ -163,8 +161,6 @@ public class Driver {
         int input = scanner.nextInt();
 
         boolean coordinateSearch = false;
-//        String attributes = "L.LID as LID, UID, Type, Latitude, Longitude, L.Status as Status, " +
-//                "Address, City, Country, PostalCode";
         StringBuilder query = new StringBuilder();
 
         query.append("SELECT * FROM Listings NATURAL JOIN Addresses WHERE Status='ACTIVE'");
@@ -178,21 +174,16 @@ public class Driver {
                 if (distance < 0) {
                     distance = 5000;
                 }
-                // "SELECT * FROM Listings NATURAL JOIN ADDRESSES WHERE "
                 query.setLength(0);
                 query.append("WITH temp AS (SELECT *, ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
                         "point(Latitude, Longitude)) as Distance FROM Listings NATURAL JOIN Addresses " +
                         "WHERE Status='ACTIVE') " +
                         "SELECT * FROM temp WHERE Distance <= " +distance+ " ORDER BY Distance");
-//                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
-//                        "point(Latitude, Longitude)) <= "+distance);
                 coordinateSearch = true;
                 break;
             case 3:
                 System.out.print("Enter postal code (length >3): ");
                 String postalCode = scanner.next().toLowerCase(Locale.ROOT).substring(0, 3);
-                // "SELECT * FROM Listings NATURAL JOIN ADDRESSES " +
-                //                        "WHERE
                 query.append(" AND SUBSTRING(PostalCode, 1, 3)='" + postalCode + "'");
                 break;
             case 4:
@@ -203,8 +194,6 @@ public class Driver {
                 String city = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
                 System.out.print("Country: ");
                 String country = scanner.nextLine().toLowerCase(Locale.ROOT).trim();
-//                SELECT * FROM Listings NATURAL JOIN Addresses " +
-//                "WHERE
                 query.append((" AND Address='%s' AND City='%s' AND Country='%s'").formatted(address, city, country));
                 break;
             default:
@@ -702,17 +691,6 @@ public class Driver {
             String star = "*";
             System.out.println(star.repeat(50));
             List<Amenity> offered = dao.getAmenitiesListByLID(lid);
-//            double price = dao.avgPriceOfListings(type, offered, country, city, postalCode);
-//            if (price <= 0) {
-//                price = dao.avgPriceOfListings(type, offered, country, city);
-//                if (price <= 0) {
-//                    price = dao.avgPriceOfListings(type, offered, country);
-//                    if (price <= 0) {
-//                        System.out.println("Not enough data to recommend price of listing");
-//                        return;
-//                    }
-//                }
-//            }
             double price = getAvgPriceOfListings(type, offered, country, city, postalCode);
             if (price <= 0) {
                 System.out.println("Not enough data to recommend price of listing");
@@ -742,7 +720,7 @@ public class Driver {
     }
 
     public static void createBooking(List<Listing> listings) throws SQLException {
-        System.out.print("Select a listing you would like to book: ");
+        System.out.print("Select a listing you would like to book (-1 to exit): ");
         int input = scanner.nextInt();
         if (input < 0 || input > listings.size()) {
             System.out.println("Invalid Listing");
@@ -876,7 +854,7 @@ public class Driver {
     }
 
     public static void cancelBooking(List<Booking> bookings) throws SQLException {
-        System.out.print("Select a booking you would like to cancel: ");
+        System.out.print("Select a booking you would like to cancel (-1 to exit): ");
         int input = scanner.nextInt();
         if (input < 0 || input > bookings.size()) {
             System.out.println("Invalid Booking");
@@ -890,7 +868,7 @@ public class Driver {
     }
 
     public static void reviewBooking(List<Booking> bookings) throws SQLException {
-        System.out.print("Select a booking you would like to review: ");
+        System.out.print("Select a booking you would like to review (-1 to exit): ");
         int input = scanner.nextInt();
         if (input < 0 || input > bookings.size()) {
             System.out.println("Invalid Booking");
@@ -925,9 +903,9 @@ public class Driver {
 
     public static void reviewUser(List<User> users) throws SQLException {
         if (loggedInUser.getClass().equals(Renter.class)) {
-            System.out.print("Select a host you would like to review: ");
+            System.out.print("Select a host you would like to review (-1 to exit): ");
         } else {
-            System.out.print("Select a renter you would like to review: ");
+            System.out.print("Select a renter you would like to review (-1 to exit): ");
         }
         int input = scanner.nextInt();
         if (input < 0 || input > users.size()) {
