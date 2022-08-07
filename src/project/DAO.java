@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class DAO {
@@ -841,7 +842,31 @@ public class DAO {
         }
     }
 
-    // more reports to be added
+    /* Returns a ResultSet that contains reviews for all active listings */
+    public ResultSet getAllListingReviews() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT l.LID, b.Review " +
+                "FROM Listings l, Bookings b " +
+                "WHERE b.LID=l.LID AND l.Status='ACTIVE' AND b.review IS NOT NULL " +
+                "ORDER BY l.LID");
+        return stmt.executeQuery();
+    }
+
+    /* Returns a linkedhashmap of listings to number of reviews that listing has */
+    public LinkedHashMap<Integer, Integer> getListingReviewNum() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT l.lid, COUNT(*) AS ReviewNum " +
+                "FROM Listings l, Bookings b " +
+                "WHERE b.LID=l.LID AND b.review IS NOT NULL " +
+                "GROUP BY l.LID " +
+                "ORDER BY l.LID");
+        ResultSet rs = stmt.executeQuery();
+        LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+        while (rs.next()) {
+            int lid = rs.getInt("lid");
+            int reviewNum = rs.getInt("ReviewNum");
+            result.put(lid, reviewNum);
+        }
+        return result;
+    }
 
     public void close() throws SQLException {
         conn.close();

@@ -213,7 +213,7 @@ public class Driver {
         System.out.print("Would you like to filter by date range? (y/n): ");
         String response = scanner.next().trim().toLowerCase(Locale.ROOT);
         if (response.equals("y")) {
-            System.out.print("Enter date range YYY-MM-DD YYY-MM-DD: ");
+            System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
             query1.append("SELECT * FROM Base WHERE LID IN (SELECT L.LID FROM Listings L, Calendars C " +
@@ -349,6 +349,9 @@ public class Driver {
                 System.out.print("Enter year of interest: ");
                 String year = scanner.next().trim();
                 dao.reportCancellations(hostRenter, year);
+                break;
+            case 7:
+                Listing.displayNPs(dao);
                 break;
             default:
                 break;
