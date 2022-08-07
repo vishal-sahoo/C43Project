@@ -230,7 +230,7 @@ public class Driver {
         System.out.print("Would you like to filter by price range? (y/n): ");
         response = scanner.next();
         if (response.equalsIgnoreCase("y")) {
-            System.out.print("Enter price range xx yy: ");
+            System.out.print("Enter price range, separated by a space: ");
             Double min = scanner.nextDouble();
             Double max = scanner.nextDouble();
             query2.append("SELECT * FROM Filter1 WHERE LID IN (SELECT L.LID FROM LISTINGS L, CALENDARS C "+
@@ -243,8 +243,8 @@ public class Driver {
         StringBuilder query3 = new StringBuilder();
 
         System.out.print("Would you like to filter by amenities offered? (y/n): ");
-        response = scanner.next();
-        if (response.equalsIgnoreCase("y")) {
+        response = scanner.next().toLowerCase(Locale.ROOT);
+        if (response.equals("y")) {
             scanner.nextLine();
             System.out.print("Enter amenities (comma separated): ");
             String str = scanner.nextLine();
@@ -253,9 +253,9 @@ public class Driver {
             set.append("(");
             for (int i=0; i<amenities.length; i++) {
                 if (i==0) {
-                    set.append("'" + amenities[i] + "'");
+                    set.append("'" + amenities[i].trim() + "'");
                 } else {
-                    set.append("," + "'" + amenities[i] + "'");
+                    set.append("," + "'" + amenities[i].trim() + "'");
                 }
             }
             set.append(")");
