@@ -7,7 +7,7 @@ public class Driver {
 
     public static final String dbName = "C43Project";
     public static final String user = "root";
-    public static final String password = "";
+    public static final String password = "HAVISHU19";
 
     private static Scanner scanner;
     private static DAO dao;
@@ -121,6 +121,7 @@ public class Driver {
 
         System.out.print("Password: ");
         String password = scanner.next();
+//        String password = String.valueOf(System.console().readPassword());
 
         try {
             if (choice == 1) {
@@ -559,19 +560,19 @@ public class Driver {
         String address = scanner.nextLine();
 
         System.out.print("City: ");
-        String city = scanner.nextLine();
+        String city = scanner.nextLine().trim().toLowerCase(Locale.ROOT);
 
         System.out.print("Country: ");
-        String country = scanner.nextLine();
+        String country = scanner.nextLine().trim().toLowerCase(Locale.ROOT);
 
         System.out.print("Postal Code: ");
-        String postalCode = scanner.next();
+        String postalCode = scanner.next().trim().toLowerCase(Locale.ROOT);
 
         try {
             int lid = Listing.createListing(dao, loggedInUser.getUid(), type, latitude, longitude, address, city, country, postalCode);
             System.out.println("Listing Created Successfully!");
 
-            addAmenities(lid);
+            addAmenities(lid, type, country, city, postalCode);
         } catch (IllegalArgumentException iae) {
             System.out.println("Invalid input. Please insure fields are non-empty or type matches types listed.");
         } catch (SQLException sql) {
@@ -581,7 +582,7 @@ public class Driver {
 
     }
 
-    public static void addAmenities(int lid) {
+    public static void addAmenities(int lid, String type, String country, String city, String postalCode) {
         System.out.println("===== Adding amenities to listing =====");
 
         try {
@@ -599,12 +600,18 @@ public class Driver {
                 System.out.println("2. Features");
                 System.out.println("3. Location");
                 System.out.println("4. Safety");
+                System.out.println("5. View Host Toolkit");
 
                 int input = scanner.nextInt();
                 scanner.nextLine(); // flush
 
                 if (input == -1) {
                     break;
+                }
+
+                if (input == 5) {
+                    hostToolkit(lid, type, country, city, postalCode);
+                    continue;
                 }
 
                 // loop to add multiple amenities from category
@@ -638,6 +645,82 @@ public class Driver {
         }
 
         System.out.println("Finished adding amenities");
+    }
+
+    public static double getAvgPriceOfListings(String type, List<Amenity> offered,
+                                                String country, String city, String postalCode) throws SQLException {
+        double price = dao.avgPriceOfListings(type, offered, country, city, postalCode);
+        if (price <= 0) {
+            price = dao.avgPriceOfListings(type, offered, country, city);
+            if (price <= 0) {
+                price = dao.avgPriceOfListings(type, offered, country);
+            }
+        }
+        return price;
+    }
+
+    public static void recommendAmenities(List<Amenity> amenities, List<Amenity> offered, String type, String country,
+                                        String city, String postalCode, double price) throws SQLException {
+        int i = 0;
+        while (i < amenities.size() && i < 2) {
+            List<Amenity> temp = new ArrayList<>();
+            temp.addAll(offered);
+            temp.add(amenities.get(i));
+            double newPrice = getAvgPriceOfListings(type, temp, country, city, postalCode);
+            if (newPrice <= 0) {
+                System.out.println(i + ") " + amenities.get(i).getDescription());
+            } else {
+                double increase = newPrice - price;
+                System.out.println(i + ") " + amenities.get(i).getDescription() +
+                        " with price increase of " + increase);
+            }
+            i++;
+        }
+    }
+
+    public static void hostToolkit(int lid, String type, String country, String city, String postalCode) {
+        try {
+            // ----------- recommend price -------------
+            String star = "*";
+            System.out.println(star.repeat(50));
+            List<Amenity> offered = dao.getAmenitiesListByLID(lid);
+//            double price = dao.avgPriceOfListings(type, offered, country, city, postalCode);
+//            if (price <= 0) {
+//                price = dao.avgPriceOfListings(type, offered, country, city);
+//                if (price <= 0) {
+//                    price = dao.avgPriceOfListings(type, offered, country);
+//                    if (price <= 0) {
+//                        System.out.println("Not enough data to recommend price of listing");
+//                        return;
+//                    }
+//                }
+//            }
+            double price = getAvgPriceOfListings(type, offered, country, city, postalCode);
+            if (price <= 0) {
+                System.out.println("Not enough data to recommend price of listing");
+            } else {
+                System.out.println("Recommended price: " + price);
+            }
+            // ----------- recommend amenities -------------
+            List<Amenity> essentials = dao.getCommonEssentials(offered);
+            List<Amenity> features = dao.getUncommonFeatures(offered);
+            if (essentials.isEmpty()) {
+                System.out.println("No essentials to recommend");
+            } else {
+                System.out.println("Consider adding the following essentials/safety: ");
+                recommendAmenities(essentials, offered, type, country, city, postalCode, price);
+            }
+            if (features.isEmpty()) {
+                System.out.println("No features to recommend");
+            } else {
+                System.out.println("Consider adding the following features: ");
+                recommendAmenities(features, offered, type, country, city, postalCode, price);
+            }
+            System.out.println(star.repeat(50));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Something went wrong trying to recommend listings");
+        }
     }
 
     public static void createBooking(List<Listing> listings) throws SQLException {
