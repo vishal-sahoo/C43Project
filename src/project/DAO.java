@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class DAO {
@@ -472,7 +473,7 @@ public class DAO {
         ResultSet rs = stmt.executeQuery();
 
         List<Booking> bookings = new ArrayList<Booking>();
-        if (rs.next()) {
+        while (rs.next()) {
             int bid = rs.getInt("BID");
             int lid = rs.getInt("LID");
             String startDate = rs.getString("StartDate");
@@ -493,7 +494,7 @@ public class DAO {
         ResultSet rs = stmt.executeQuery();
 
         List<Booking> bookings = new ArrayList<Booking>();
-        if (rs.next()) {
+        while (rs.next()) {
             int bid = rs.getInt("BID");
             int rid = rs.getInt("RID");
             int lid = rs.getInt("LID");
@@ -654,6 +655,220 @@ public class DAO {
         stmt1.executeUpdate();
         // remove listings
         // cancel relevant bookings
+    }
+
+    // Reports to support
+    public int reportNumBookings(String startDate, String endDate, String postalCode) throws SQLException {
+        // return num of bookings given a date range
+        // group by city or postal code within a city
+        PreparedStatement stmt;
+        if (postalCode.equals("y")){
+            stmt = conn.prepareStatement("SELECT City, PostalCode, COUNT(*) AS NumBookings " +
+                    "FROM Bookings b, Listings l, Addresses a " +
+                    "WHERE b.LID=l.LID AND l.AID=a.AID AND StartDate >= ? AND EndDate <= ? " +
+                    "AND b.Status != 'CANCELLED' GROUP BY City, PostalCode");
+        } else {
+            stmt = conn.prepareStatement("SELECT City, COUNT(*) AS NumBookings " +
+                    "FROM Bookings b, Listings l, Addresses a " +
+                    "WHERE b.LID=l.LID AND l.AID=a.AID AND StartDate >= ? AND EndDate <= ? " +
+                    "AND b.Status != 'CANCELLED' GROUP BY City");
+        }
+        stmt.setString(1, startDate);
+        stmt.setString(2, endDate);
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String city = rs.getString("City");
+            int num = rs.getInt("NumBookings");
+            if (postalCode.equals("y")) {
+                String code = rs.getString("PostalCode");
+                System.out.println(city + ", " + code + ", " + num);
+            }else {
+                System.out.println(city + ", " + num);
+            }
+        }
+        return 0;
+    }
+
+    public void reportNumListings(String includeCity, String includeCode) throws SQLException {
+        // return num of listings by country, by country and city, by country, city, and postal code
+        PreparedStatement stmt;
+        if (includeCity.equals("y")){
+            if (includeCode.equals(("y"))) {
+                stmt = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS NumListings " +
+                        "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                        "GROUP BY Country, City, PostalCode");
+            } else {
+                stmt = conn.prepareStatement("SELECT Country, City, COUNT(*) AS NumListings " +
+                        "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                        "GROUP BY Country, City");
+            }
+        } else {
+            stmt = conn.prepareStatement("SELECT Country, COUNT(*) AS NumListings " +
+                    "FROM Listings NATURAL JOIN Addresses WHERE Status = 'ACTIVE' " +
+                    "GROUP BY Country");
+        }
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String country = rs.getString("Country");
+            int num = rs.getInt("NumListings");
+            if (includeCity.equals("y")) {
+                String city = rs.getString("City");
+                if(includeCode.equals("y")) {
+                    String code = rs.getString("PostalCode");
+                    System.out.println(country + ", " + city + ", " + code + ", " + num);
+                } else {
+                    System.out.println(country + ", " + city + ", " + num);
+                }
+            }else {
+                System.out.println(country + ", " + num);
+            }
+        }
+    }
+
+    public void rankHosts(String input) throws SQLException {
+        // rank hosts by total number of listings by country (optionally by city)
+        PreparedStatement stmt;
+        if (input.equals("y")) {
+            stmt = conn.prepareStatement("SELECT Country, City, Name, Count(*) as Num FROM " +
+                    "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
+                    "GROUP BY Country, City, l.UID ORDER BY count(*) DESC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Country, Name, Count(*) as Num FROM " +
+                    "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
+                    "GROUP BY Country, l.UID ORDER BY count(*) DESC");
+        }
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            String country = rs.getString("Country");
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            if (input.equals("y")) {
+                String city = rs.getString("City");
+                System.out.println(country + ", " + city + ", " + name + ", " + num);
+            } else {
+                System.out.println(country + ", " + name + ", " + num);
+            }
+        }
+    }
+
+    /* Reports the hosts that have a num of listings more than 10% the num of listings in that city, country */
+    public void reportHost() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) AS NumListing, City, Country, u.Name " +
+                "FROM Listings l NATURAL JOIN Addresses a1, Users u " +
+                "WHERE l.Status='ACTIVE' AND u.UID=l.UID " +
+                "GROUP BY Country, City, l.UID " +
+                "HAVING NumListing >= 0.1 * ( " +
+                "    SELECT COUNT(*) " +
+                "    FROM Listings c NATURAL JOIN Addresses a2 " +
+                "    WHERE Status='ACTIVE' AND a2.Country=a1.Country AND a1.City=a2.City) " +
+                "ORDER BY City, Country");
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            String city = rs.getString("City");
+            String country = rs.getString("Country");
+            int numListing = rs.getInt("NumListing");
+            System.out.println(name + " with " + numListing + " listings in " + city + ", " + country);
+        }
+    }
+
+    /* Ranks renters by num of bookings */
+    public void rankRenters(String startDate, String endDate, String input) throws SQLException {
+        PreparedStatement stmt;
+        if (input.equals("y")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num, City " +
+                    "FROM Bookings b, Users u, Addresses a, Listings l " +
+                    "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.LID=l.LID AND l.AID=a.AID AND b.Status!='CANCELLED' " +
+                    "GROUP BY b.RID, City " +
+                    "HAVING COUNT(b.RID) >= 2 " +
+                    "ORDER BY Num DESC");
+        } else {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num FROM Bookings b, Users u " +
+                    "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.Status!='CANCELLED' " +
+                    "GROUP BY b.RID " +
+                    "ORDER BY num DESC");
+        }
+        stmt.setString(1, startDate);
+        stmt.setString(2, endDate);
+        //System.out.println(stmt);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            if (input.equals("y")) {
+                String city = rs.getString("City");
+                System.out.println(name + ", " + city + ", " + num);
+            } else {
+                System.out.println(name + ", " + num);
+            }
+        }
+    }
+
+    public void reportCancellations(String hostRenter, String year) throws SQLException {
+        PreparedStatement stmt;
+        if (hostRenter.equals("host")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b, Listings l " +
+                    "WHERE b.Status='CANCELED' AND b.lid=l.LID AND l.uid=u.UID AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+        } else if (hostRenter.equals("renter")) {
+            stmt = conn.prepareStatement("SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b " +
+                    "WHERE u.UID=b.RID AND b.Status='CANCELED' AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+        } else {
+            stmt = conn.prepareStatement("(SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b " +
+                    "WHERE u.UID=b.RID AND b.Status='CANCELED' AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID) " +
+                    "UNION  " +
+                    "(SELECT Name, COUNT(*) AS Num " +
+                    "FROM Users u, Bookings b, Listings l " +
+                    "WHERE b.Status='CANCELED' AND b.lid=l.LID AND l.uid=u.UID AND (YEAR(b.StartDate)=? OR YEAR(b.EndDate)=?) " +
+                    "GROUP BY u.UID) " +
+                    "ORDER BY Num DESC " +
+                    "LIMIT 5");
+            stmt.setString(3, year);
+            stmt.setString(4, year);
+        }
+        stmt.setString(1, year);
+        stmt.setString(2, year);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            int num = rs.getInt("Num");
+            System.out.println(name + ", " + num);
+        }
+    }
+
+    /* Returns a ResultSet that contains reviews for all active listings */
+    public ResultSet getAllListingReviews() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT l.LID, b.Review " +
+                "FROM Listings l, Bookings b " +
+                "WHERE b.LID=l.LID AND l.Status='ACTIVE' AND b.review IS NOT NULL " +
+                "ORDER BY l.LID");
+        return stmt.executeQuery();
+    }
+
+    /* Returns a linkedhashmap of listings to number of reviews that listing has */
+    public LinkedHashMap<Integer, Integer> getListingReviewNum() throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("SELECT l.lid, COUNT(*) AS ReviewNum " +
+                "FROM Listings l, Bookings b " +
+                "WHERE b.LID=l.LID AND b.review IS NOT NULL " +
+                "GROUP BY l.LID " +
+                "ORDER BY l.LID");
+        ResultSet rs = stmt.executeQuery();
+        LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+        while (rs.next()) {
+            int lid = rs.getInt("lid");
+            int reviewNum = rs.getInt("ReviewNum");
+            result.put(lid, reviewNum);
+        }
+        return result;
     }
 
     public List<Amenity> getAmenitiesListByLID(int lid) throws SQLException {
