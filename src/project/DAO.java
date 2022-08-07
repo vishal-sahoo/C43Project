@@ -768,7 +768,11 @@ public class DAO {
             String city = rs.getString("City");
             String country = rs.getString("Country");
             int numListing = rs.getInt("NumListing");
-            System.out.println(name + " with " + numListing + " listings in " + city + ", " + country);
+            if (numListing == 1) {
+                System.out.println(name + " with " + numListing + " listing in " + city + ", " + country);
+            } else {
+                System.out.println(name + " with " + numListing + " listings in " + city + ", " + country);
+            }
         }
     }
 

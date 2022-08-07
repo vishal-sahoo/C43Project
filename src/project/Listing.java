@@ -88,7 +88,7 @@ public class Listing {
                     String review = reviews.getString("Review");
 
                     // split the review into sentences
-                    String[] split = review.split("[.!?]");
+                    String[] split = review.toLowerCase(Locale.ROOT).split("[.!?]");
 
                     // loop through sentences and parse them
                     for (int j = 0; j < split.length; j++) {
