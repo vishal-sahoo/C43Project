@@ -306,14 +306,17 @@ public class DAO {
         stmt.execute();
     }
 
-    public ArrayList<Listing> getListingsFromView(String view, String str) throws SQLException {
+    public ArrayList<Listing> getListingsFromView(String view, String str,
+                                                  boolean coordinateSearch) throws SQLException {
         PreparedStatement stmt;
 
         if (str.equals("ASC") || str.equals("DESC")) {
-            stmt = conn.prepareStatement("SELECT L.*, AVG(Price) as Price FROM "+view+" L, Calendars C " +
+            stmt = conn.prepareStatement("SELECT L.*, AVG(Price) AS Price FROM "+view+" L, Calendars C " +
                     "WHERE L.LID=C.LID GROUP BY L.LID ORDER BY Price " + str);
         } else {
-            stmt = conn.prepareStatement("SELECT * FROM "+ view);
+            stmt = conn.prepareStatement("(SELECT L.*, AVG(Price) AS Price FROM "+view+" L, Calendars C " +
+                    "WHERE L.LID=C.LID GROUP BY L.LID) UNION (SELECT L.*, -1 AS Price FROM "+view+" L, Calendars C " +
+                    "WHERE L.LID NOT IN (SELECT LID FROM Calendars))");
         }
 
         ResultSet rs = stmt.executeQuery();
@@ -331,7 +334,15 @@ public class DAO {
             String postalCode = rs.getString("PostalCode");
 
             Address newAddress = new Address(aid, address, city, country, postalCode);
-            result.add(new Listing(lid, type, latitude, longitude, newAddress));
+
+            double price = rs.getDouble("Price");
+            String aux = price == -1 ? "" : "Price: " + price;
+
+            if (coordinateSearch) {
+                aux += " Distance: " + rs.getDouble("Distance");
+            }
+
+            result.add(new Listing(lid, type, latitude, longitude, newAddress, aux));
         }
         return result;
     }

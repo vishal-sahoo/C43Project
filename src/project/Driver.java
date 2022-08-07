@@ -24,18 +24,21 @@ public class Driver {
         System.out.println("1: View Listings"); // can select a listing to proceed to booking
         System.out.println("2: View Upcoming Bookings"); // -> can cancel a booking
         System.out.println("3: View Past Bookings"); // -> can select a booking to leave a review
-        System.out.println("4: Leave A Review About A Host");
-        System.out.println("5: Delete Account");
-        System.out.println("6: Log Out");
+        System.out.println("4: View Canceled Bookings");
+        System.out.println("5: Leave A Review About A Host");
+        System.out.println("6: Delete Account");
+        System.out.println("7: Log Out");
     }
 
     public static void displayHostMenu() {
         System.out.println("1: Create A Listing"); // -> take necessary input
         System.out.println("2: View Your Listings"); // -> can select a listing and then update price or availability
         System.out.println("3: View Upcoming Bookings"); // -> can cancel a booking
-        System.out.println("4: Leave A Review About A Renter"); // -> take text and rating input
-        System.out.println("5: Delete Account");
-        System.out.println("6: Log Out");
+        System.out.println("4: View Past Bookings"); // -> can select a booking to leave a review
+        System.out.println("5: View Canceled Bookings");
+        System.out.println("6: Leave A Review About A Renter"); // -> take text and rating input
+        System.out.println("7: Delete Account");
+        System.out.println("8: Log Out");
     }
 
     public static boolean signup() {
@@ -150,6 +153,7 @@ public class Driver {
         System.out.print("Enter Input: ");
         int input = scanner.nextInt();
 
+        boolean coordinateSearch = false;
 //        String attributes = "L.LID as LID, UID, Type, Latitude, Longitude, L.Status as Status, " +
 //                "Address, City, Country, PostalCode";
         StringBuilder query = new StringBuilder();
@@ -173,6 +177,7 @@ public class Driver {
                         "SELECT * FROM temp WHERE Distance <= " +distance+ " ORDER BY Distance");
 //                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
 //                        "point(Latitude, Longitude)) <= "+distance);
+                coordinateSearch = true;
                 break;
             case 3:
                 System.out.print("Enter postal code (length >3): ");
@@ -278,7 +283,7 @@ public class Driver {
         ArrayList<Listing> listings;
         System.out.print("Would you like to rank by price? (asc/desc/n): ");
         String str = scanner.next().trim().toUpperCase(Locale.ROOT);
-        listings = dao.getListingsFromView("Filter4", str);
+        listings = dao.getListingsFromView("Filter4", str, coordinateSearch);
 
         for (String s: views) {
             dao.deleteView(s);
@@ -712,55 +717,60 @@ public class Driver {
 
     public static boolean handleHostInput(int choice) {
         boolean isLoggedIn = true;
-        switch (choice) {
-            case 1:
-                createListing();
-                break;
-            case 2:
-                viewHostListings();
-                break;
-            case 3:
-                try {
+        try {
+            switch (choice) {
+                case 1:
+                    createListing();
+                    break;
+                case 2:
+                    viewHostListings();
+                    break;
+                case 3:
                     List<Booking> bookings = displayBookings("UPCOMING");
                     if (!bookings.isEmpty()) {
                         cancelBooking(bookings);
                     } else {
                         System.out.println("No bookings to display");
                     }
-                } catch (Exception e) {
-                    System.out.println("Something went wrong trying to retrieve bookings");
-                }
-                break;
-            case 4:
-                try {
+                    break;
+                case 4:
+                    bookings = displayBookings("PAST");
+                    if (bookings.isEmpty()) {
+                        System.out.println("No bookings to display");
+                    }
+                    break;
+                case 5:
+                    bookings = displayBookings("CANCELED");
+                    if (bookings.isEmpty()) {
+                        System.out.println("No bookings to display");
+                    }
+                    break;
+                case 6:
                     List<User> renters = displayUsers();
                     if (!renters.isEmpty()) {
                         reviewUser(renters);
                     } else {
                         System.out.println("No renters to display");
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                break;
-            case 5:
-                try {
+                    break;
+                case 7:
                     dao.deleteHost(loggedInUser.getUid());
                     System.out.println("User deleted successfully");
                     isLoggedIn = false;
                     loggedInUser = null;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                break;
-            case 6:
-                System.out.println("Thank you for using MyBnB!");
-                isLoggedIn = false;
-                loggedInUser = null;
-                break;
-            default:
-                System.out.println("Invalid Choice");
-                break;
+                    break;
+                case 8:
+                    System.out.println("Thank you for using MyBnB!");
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                    break;
+                default:
+                    System.out.println("Invalid Choice");
+                    break;
+            }
+        } catch (Exception e) {
+            System.out.println("Something went wrong");
+            e.printStackTrace();
         }
         return isLoggedIn;
     }
@@ -876,6 +886,12 @@ public class Driver {
                     }
                     break;
                 case 4:
+                    bookings = displayBookings("CANCELED");
+                    if (bookings.isEmpty()) {
+                        System.out.println("No bookings to display");
+                    }
+                    break;
+                case 5:
                     List<User> hosts = displayUsers();
                     if (!hosts.isEmpty()) {
                         reviewUser(hosts);
@@ -883,13 +899,13 @@ public class Driver {
                         System.out.println("No hosts to display");
                     }
                     break;
-                case 5:
+                case 6:
                     dao.deleteRenter(loggedInUser.getUid());
                     System.out.println("User deleted successfully");
                     isLoggedIn = false;
                     loggedInUser = null;
                     break;
-                case 6:
+                case 7:
                     System.out.println("Thank you for using MyBnB!");
                     isLoggedIn = false;
                     break;

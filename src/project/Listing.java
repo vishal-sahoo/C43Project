@@ -10,6 +10,17 @@ public class Listing {
     private double longitude;
     private Address address;
 
+    private String aux;
+
+    public Listing(int lid, String type, double latitude, double longitude, Address address, String aux) {
+        this.lid = lid;
+        this.type = type;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.address = address;
+        this.aux = aux;
+    }
+
     public Listing(int lid, String type, double latitude, double longitude, Address address) {
         this.lid = lid;
         this.type = type;
@@ -19,7 +30,7 @@ public class Listing {
     }
 
     public static int createListing(DAO dao, int hid, String type, double latitude, double longitude, String address,
-                                        String city, String country, String postalCode)
+                                    String city, String country, String postalCode)
             throws IllegalArgumentException, SQLException {
 
         Listing.validateParameters(type, latitude, longitude, address, city, country, postalCode);
@@ -44,6 +55,6 @@ public class Listing {
 
     @Override
     public String toString() {
-        return type + " at " + address;
+        return type + " at " + address + (aux == null ? "" : " " + aux);
     }
 }
