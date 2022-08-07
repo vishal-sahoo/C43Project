@@ -731,11 +731,11 @@ public class DAO {
         if (input.equals("y")) {
             stmt = conn.prepareStatement("SELECT Country, City, Name, Count(*) as Num FROM " +
                     "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
-                    "GROUP BY Country, City, l.UID ORDER BY count(*) DESC");
+                    "GROUP BY Country, City, l.UID ORDER BY count(*) DESC, Country DESC, City DESC");
         } else {
             stmt = conn.prepareStatement("SELECT Country, Name, Count(*) as Num FROM " +
                     "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
-                    "GROUP BY Country, l.UID ORDER BY count(*) DESC");
+                    "GROUP BY Country, l.UID ORDER BY count(*) DESC, Country DESC");
         }
         ResultSet rs = stmt.executeQuery();
         while(rs.next()) {
@@ -780,28 +780,28 @@ public class DAO {
     public void rankRenters(String startDate, String endDate, String input) throws SQLException {
         PreparedStatement stmt;
         if (input.equals("y")) {
-            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num, City " +
+            stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num, City, Country " +
                     "FROM Bookings b, Users u, Addresses a, Listings l " +
                     "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.LID=l.LID AND l.AID=a.AID AND b.Status!='CANCELLED' " +
-                    "GROUP BY b.RID, City " +
+                    "GROUP BY b.RID, City, Country " +
                     "HAVING COUNT(b.RID) >= 2 " +
-                    "ORDER BY Num DESC");
+                    "ORDER BY Num DESC, Country DESC, City DESC");
         } else {
             stmt = conn.prepareStatement("SELECT Name, COUNT(b.RID) AS Num FROM Bookings b, Users u " +
                     "WHERE b.StartDate >= ? AND b.EndDate <= ? AND b.RID=u.UID AND b.Status!='CANCELLED' " +
                     "GROUP BY b.RID " +
-                    "ORDER BY num DESC");
+                    "ORDER BY Num DESC");
         }
         stmt.setString(1, startDate);
         stmt.setString(2, endDate);
-        //System.out.println(stmt);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
             String name = rs.getString("Name");
             int num = rs.getInt("Num");
             if (input.equals("y")) {
+                String country = rs.getString("Country");
                 String city = rs.getString("City");
-                System.out.println(name + ", " + city + ", " + num);
+                System.out.println(name + ", " + city + ", " + country + ", " + num);
             } else {
                 System.out.println(name + ", " + num);
             }
