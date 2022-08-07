@@ -657,12 +657,26 @@ public class Driver {
     public static double getAvgPriceOfListings(String type, List<Amenity> offered,
                                                 String country, String city, String postalCode) throws SQLException {
         double price = dao.avgPriceOfListings(type, offered, country, city, postalCode);
-        if (price <= 0) {
-            price = dao.avgPriceOfListings(type, offered, country, city);
-            if (price <= 0) {
-                price = dao.avgPriceOfListings(type, offered, country);
-            }
+        if (price > 0) {
+            return price;
         }
+        price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city, postalCode);
+        if (price > 0) {
+            return price;
+        }
+        price = dao.avgPriceOfListings(type, offered, country, city);
+        if (price > 0) {
+            return price;
+        }
+        price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city);
+        if (price > 0) {
+            return price;
+        }
+        price = dao.avgPriceOfListings(type, offered, country);
+        if (price > 0) {
+            return price;
+        }
+        price = dao.avgPriceOfListings(type, new ArrayList<>(), country);
         return price;
     }
 
@@ -674,7 +688,7 @@ public class Driver {
             temp.addAll(offered);
             temp.add(amenities.get(i));
             double newPrice = getAvgPriceOfListings(type, temp, country, city, postalCode);
-            if (newPrice <= 0) {
+            if (price <= 0 || newPrice <= 0 || newPrice <= price) {
                 System.out.println(i + ") " + amenities.get(i).getDescription());
             } else {
                 double increase = newPrice - price;
