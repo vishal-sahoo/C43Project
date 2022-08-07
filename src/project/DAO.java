@@ -306,14 +306,14 @@ public class DAO {
         stmt.execute();
     }
 
-    public ArrayList<Listing> getListingsFromFilter3(String str) throws SQLException {
+    public ArrayList<Listing> getListingsFromView(String view, String str) throws SQLException {
         PreparedStatement stmt;
 
         if (str.equals("ASC") || str.equals("DESC")) {
-            stmt = conn.prepareStatement("SELECT L.*, AVG(Price) as Price FROM Filter3 L, Calendars C " +
+            stmt = conn.prepareStatement("SELECT L.*, AVG(Price) as Price FROM "+view+" L, Calendars C " +
                     "WHERE L.LID=C.LID GROUP BY L.LID ORDER BY Price " + str);
         } else {
-            stmt = conn.prepareStatement("SELECT * FROM Filter3");
+            stmt = conn.prepareStatement("SELECT * FROM "+ view);
         }
 
         ResultSet rs = stmt.executeQuery();

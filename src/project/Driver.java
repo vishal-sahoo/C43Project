@@ -150,7 +150,6 @@ public class Driver {
         System.out.print("Enter Input: ");
         int input = scanner.nextInt();
 
-        boolean coordinateSearch = false;
 //        String attributes = "L.LID as LID, UID, Type, Latitude, Longitude, L.Status as Status, " +
 //                "Address, City, Country, PostalCode";
         StringBuilder query = new StringBuilder();
@@ -174,7 +173,6 @@ public class Driver {
                         "SELECT * FROM temp WHERE Distance <= " +distance+ " ORDER BY Distance");
 //                query.append(" AND ST_Distance_Sphere(point("+latitude+", "+longitude+"), " +
 //                        "point(Latitude, Longitude)) <= "+distance);
-                coordinateSearch = true;
                 break;
             case 3:
                 System.out.print("Enter postal code (length >3): ");
@@ -199,12 +197,10 @@ public class Driver {
                 break;
         }
 
-//        System.out.println(query);
-
-        dao.deleteView("Base");
-        dao.deleteView("Filter1");
-        dao.deleteView("Filter2");
-        dao.deleteView("Filter3");
+        String [] views = {"Base", "Filter1", "Filter2", "Filter3", "Filter4"};
+        for (String s: views) {
+            dao.deleteView(s);
+        }
 
         dao.createView("Base", query.toString());
 
@@ -212,7 +208,7 @@ public class Driver {
 
         System.out.print("Would you like to filter by date range? (y/n): ");
         String response = scanner.next();
-        if (response.toLowerCase().equals("y")) {
+        if (response.equalsIgnoreCase("y")) {
             System.out.print("Enter date range YYYY-MM-DD YYYY-MM-DD: ");
             String startDate = scanner.next();
             String endDate = scanner.next();
@@ -229,7 +225,7 @@ public class Driver {
 
         System.out.print("Would you like to filter by price range? (y/n): ");
         response = scanner.next();
-        if (response.toLowerCase().equals("y")) {
+        if (response.equalsIgnoreCase("y")) {
             System.out.print("Enter price range xx yy: ");
             Double min = scanner.nextDouble();
             Double max = scanner.nextDouble();
@@ -244,7 +240,7 @@ public class Driver {
 
         System.out.print("Would you like to filter by amenities offered? (y/n): ");
         response = scanner.next();
-        if (response.toLowerCase().equals("y")) {
+        if (response.equalsIgnoreCase("y")) {
             scanner.nextLine();
             System.out.print("Enter amenities (comma separated): ");
             String str = scanner.nextLine();
@@ -266,19 +262,27 @@ public class Driver {
             dao.createView("Filter3", "SELECT * FROM Filter2");
         }
 
-        ArrayList<Listing> listings;
-        if (!coordinateSearch) {
-            listings = dao.getListingsFromFilter3("");
+        StringBuilder query4 = new StringBuilder();
+
+        System.out.print("Would you like to filter by type? (y/n): ");
+        response = scanner.next();
+        if (response.equalsIgnoreCase("y")) {
+            System.out.print("Enter type: ");
+            String type = scanner.next().trim().toLowerCase(Locale.ROOT);
+            query4.append("SELECT * FROM Filter3 WHERE Type = '%s'".formatted(type));
+            dao.createView("Filter4", query4.toString());
         } else {
-            System.out.print("Would you like to rank by price? (asc/desc/n): ");
-            String str = scanner.next().trim().toUpperCase(Locale.ROOT);
-            listings = dao.getListingsFromFilter3(str);
+            dao.createView("Filter4", "SELECT * FROM Filter3");
         }
 
-        dao.deleteView("Base");
-        dao.deleteView("Filter1");
-        dao.deleteView("Filter2");
-        dao.deleteView("Filter3");
+        ArrayList<Listing> listings;
+        System.out.print("Would you like to rank by price? (asc/desc/n): ");
+        String str = scanner.next().trim().toUpperCase(Locale.ROOT);
+        listings = dao.getListingsFromView("Filter4", str);
+
+        for (String s: views) {
+            dao.deleteView(s);
+        }
 
         for (int j=0; j<listings.size(); j++) {
             System.out.println(j + ") " + listings.get(j));
