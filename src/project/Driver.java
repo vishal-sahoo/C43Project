@@ -890,7 +890,7 @@ public class Driver {
         }
         Booking booking = bookings.get(input);
         if (booking.getReview() != null) {
-            System.out.println("Selected booking has been reviewed");
+            System.out.println("Selected booking has already been reviewed");
             return;
         }
         scanner.nextLine();
