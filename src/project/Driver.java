@@ -271,7 +271,7 @@ public class Driver {
         System.out.print("Would you like to filter by type? (y/n): ");
         response = scanner.next();
         if (response.equalsIgnoreCase("y")) {
-            System.out.print("Enter type: ");
+            System.out.print("Enter type (house, apartment, guesthouse, hotel): ");
             String type = scanner.next().trim().toLowerCase(Locale.ROOT);
             query4.append("SELECT * FROM Filter3 WHERE Type = '%s'".formatted(type));
             dao.createView("Filter4", query4.toString());
@@ -754,10 +754,18 @@ public class Driver {
         System.out.print("Enter date range to book YYYY-MM-DD YYYY-MM-DD: ");
         String startDate = scanner.next();
         String endDate = scanner.next();
-        Booking booking = Booking.create(dao, loggedInUser.getUid(),
-                lid, startDate, endDate);
-        if (booking != null) {
-            System.out.println("New booking was created for cost of " + booking.getCost());
+        System.out.print("Do you want to create this booking? (y/n): ");
+        String response = scanner.next().trim();
+        if (response.equalsIgnoreCase("y")) {
+            Booking booking = Booking.create(dao, loggedInUser.getUid(),
+                    lid, startDate, endDate);
+            if (booking != null) {
+                System.out.println("New booking was created for cost of " + booking.getCost());
+            } else {
+                System.out.println("Unable to create booking");
+            }
+        } else {
+            System.out.println("Booking was not created");
         }
     }
 
