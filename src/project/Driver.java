@@ -5,7 +5,7 @@ import java.util.*;
 
 public class Driver {
 
-    public static final String dbName = "C43Project";
+    public static final String dbName = "project";
     public static final String user = "root";
     public static final String password = "HAVISHU19";
 
@@ -655,48 +655,97 @@ public class Driver {
     }
 
     public static double getAvgPriceOfListings(String type, List<Amenity> offered,
-                                                String country, String city, String postalCode) throws SQLException {
+                                                String country, String city, String postalCode,
+                                                boolean recommendPrice) throws SQLException {
         double price = dao.avgPriceOfListings(type, offered, country, city, postalCode);
         if (price > 0) {
             return price;
         }
-        price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city, postalCode);
-        if (price > 0) {
-            return price;
+        if (recommendPrice) {
+            price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city, postalCode);
+            if (price > 0) {
+                return price;
+            }
         }
         price = dao.avgPriceOfListings(type, offered, country, city);
         if (price > 0) {
             return price;
         }
-        price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city);
-        if (price > 0) {
-            return price;
+        if (recommendPrice) {
+            price = dao.avgPriceOfListings(type, new ArrayList<>(), country, city);
+            if (price > 0) {
+                return price;
+            }
         }
         price = dao.avgPriceOfListings(type, offered, country);
         if (price > 0) {
             return price;
         }
-        price = dao.avgPriceOfListings(type, new ArrayList<>(), country);
+        if (recommendPrice) {
+            price = dao.avgPriceOfListings(type, new ArrayList<>(), country);
+        }
         return price;
     }
 
     public static void recommendAmenities(List<Amenity> amenities, List<Amenity> offered, String type, String country,
                                         String city, String postalCode, double price) throws SQLException {
+
+        if (price <= 0) {
+            for (int j=0; j<2 && j<amenities.size(); j++) {
+                System.out.println(j + ") " + amenities.get(j).getDescription());
+            }
+        }
+
         int i = 0;
-        while (i < amenities.size() && i < 2) {
+        double max1 = 0;
+        double max2 = 0;
+        Amenity amenity1 = null;
+        Amenity amenity2 = null;
+        while (i < amenities.size()) {
             List<Amenity> temp = new ArrayList<>();
             temp.addAll(offered);
             temp.add(amenities.get(i));
-            double newPrice = getAvgPriceOfListings(type, temp, country, city, postalCode);
-            if (price <= 0 || newPrice <= 0 || newPrice <= price) {
-                System.out.println(i + ") " + amenities.get(i).getDescription());
-            } else {
-                double increase = newPrice - price;
-                System.out.println(i + ") " + amenities.get(i).getDescription() +
-                        " with price increase of " + increase);
+            double newPrice = getAvgPriceOfListings(type, temp, country, city, postalCode, false);
+            double priceIncrease = newPrice - price;
+            if (priceIncrease > max1) {
+                max2 = max1;
+                amenity2 = amenity1;
+                max1 = priceIncrease;
+                amenity1 = amenities.get(i);
+            } else if (priceIncrease > max2) {
+                max2 = priceIncrease;
+                amenity2 = amenities.get(i);
             }
             i++;
         }
+
+        if (amenity1 == null && amenity2 == null) {
+            for (int j=0; j<2 && j<amenities.size(); j++) {
+                System.out.println(j + ") " + amenities.get(j).getDescription());
+            }
+        } else if(amenity1 != null && amenity2 == null) {
+            System.out.println(0 + ") " + amenity1.getDescription() +
+                    " with price increase of " + max1);
+            for (int j=0; j<amenities.size(); j++) {
+                if (!amenities.get(j).getDescription().equals(amenity1.getDescription())) {
+                    System.out.println(1 + ") " + amenities.get(j).getDescription());
+                    break;
+                }
+            }
+        } else {
+            System.out.println(0 + ") " + amenity1.getDescription() +
+                    " with price increase of " + max1);
+            System.out.println(1 + ") " + amenity2.getDescription() +
+                    " with price increase of " + max2);
+        }
+//        if (price <= 0 || newPrice <= 0 || newPrice <= price) {
+//            System.out.println(i + ") " + amenities.get(i).getDescription());
+//        } else {
+//            double increase = newPrice - price;
+//            System.out.println(i + ") " + amenities.get(i).getDescription() +
+//                    " with price increase of " + increase);
+//        }
+
     }
 
     public static void hostToolkit(int lid, String type, String country, String city, String postalCode) {
@@ -705,13 +754,14 @@ public class Driver {
             String star = "*";
             System.out.println(star.repeat(50));
             List<Amenity> offered = dao.getAmenitiesListByLID(lid);
-            double price = getAvgPriceOfListings(type, offered, country, city, postalCode);
+            double price = getAvgPriceOfListings(type, offered, country, city, postalCode, true);
             if (price <= 0) {
                 System.out.println("Not enough data to recommend price of listing");
             } else {
                 System.out.println("Recommended price: " + price);
             }
             // ----------- recommend amenities -------------
+            price = getAvgPriceOfListings(type, offered, country, city, postalCode, false);
             List<Amenity> essentials = dao.getCommonEssentials(offered);
             List<Amenity> features = dao.getUncommonFeatures(offered);
             if (essentials.isEmpty()) {

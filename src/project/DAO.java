@@ -731,11 +731,11 @@ public class DAO {
         if (input.equals("y")) {
             stmt = conn.prepareStatement("SELECT Country, City, Name, Count(*) as Num FROM " +
                     "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
-                    "GROUP BY Country, City, l.UID ORDER BY count(*) DESC, Country DESC, City DESC");
+                    "GROUP BY Country, City, l.UID ORDER BY Country, City, count(*) DESC");
         } else {
             stmt = conn.prepareStatement("SELECT Country, Name, Count(*) as Num FROM " +
                     "Listings l, Addresses a, Users u WHERE l.AID=a.AID and l.UID=u.UID and l.Status='ACTIVE' " +
-                    "GROUP BY Country, l.UID ORDER BY count(*) DESC, Country DESC");
+                    "GROUP BY Country, l.UID ORDER BY Country, count(*) DESC");
         }
         ResultSet rs = stmt.executeQuery();
         while(rs.next()) {
@@ -1002,13 +1002,13 @@ public class DAO {
             stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
                     "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
                     "NATURAL JOIN Amenities WHERE Category IN ('essentials', 'safety') " +
-                    "GROUP BY Description ORDER BY Prop DESC");
+                    "GROUP BY Description ORDER BY Prop DESC LIMIT 5");
         } else {
             stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
                     "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
                     "NATURAL JOIN Amenities WHERE Category IN ('essentials', 'safety') " +
                     "AND Description NOT IN " + set +
-                    " GROUP BY Description ORDER BY Prop DESC");
+                    " GROUP BY Description ORDER BY Prop DESC LIMIT 5");
         }
 
         ResultSet rs = stmt.executeQuery();
@@ -1031,13 +1031,13 @@ public class DAO {
             stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
                     "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
                     "NATURAL JOIN Amenities WHERE Category='features' " +
-                    "GROUP BY Description ORDER BY Prop ASC");
+                    "GROUP BY Description ORDER BY Prop ASC LIMIT 5");
         } else {
             stmt = conn.prepareStatement("SELECT Amenities.*, COUNT(*)/" +
                     "(SELECT COUNT(*) FROM LISTINGS) as Prop FROM Offers " +
                     "NATURAL JOIN Amenities WHERE Category='features' " +
                     "AND Description NOT IN " + set +
-                    "GROUP BY Description ORDER BY Prop ASC");
+                    "GROUP BY Description ORDER BY Prop ASC LIMIT 5");
         }
 
         ResultSet rs = stmt.executeQuery();
